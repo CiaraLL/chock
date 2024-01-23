@@ -366,10 +366,9 @@ onPause() ->onStop ()
 重新打开界面                    
 onStart()->onResume ()                    
 按后退键                 
-onPause ()->onStop()->onDestroyView()->onDestroy()->onDetach()    
+onPause ()->onStop()->onDestroyView()->onDestroy()->onDetach()
 
-![img_1.png](img_1.png)
- 
+![img.png](pic/img_1.png)
 和Activity有不同的方法：          
 onAttach()：当Fragment和Activity建立关联时调用；            
 onCreateView()：当fragment创建视图调用，在onCreate之后；          
