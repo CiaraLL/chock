@@ -1,6 +1,6 @@
 # Activity
 
-## Activity声明周期
+## 1.Activity生明周期
 
 onCreate（）：是 activity 的创建时候调用，做一些初始化布局之类的操作
 onStart（）：即将显示页面的时候调用。用户无法操作，也是初始化操作，
@@ -13,7 +13,7 @@ onRestart（）：从不可见的时候变成可见。
 onStart 和 onstop：根据 activity 是否可见，
 onResume 和 onpause：根据 activity 是否显示在前台
 
-### 从A->B->A
+### (1)从A->B->A
 
     A 到 B A(oncreate() -> onStart()->onResume()) ——> A(onpause()) ——> B（oncreate() -> onStart()->
     onResume()）——> A(onstop())
@@ -22,19 +22,53 @@ onResume 和 onpause：根据 activity 是否显示在前台
     B (onpause()) ——> A(onRestart() -> onStart()->onResume()) ——> B(onstop()->onDestroy())
     总结：页面可见性发生改变时候，当前页面先调用 onpause();
 
-### Activity 的四个启动模式
+### (2)横竖屏切换时activity的生命周期
+
+#### AndroidManifest没有设置configChange属性的时候
+
+    启动：
+    oncreate -> onstart -> onResume
+    切换横竖屏->onPause -> onSaveInstaceState ->onstop->onDestrory 
+    重新启动可见->oncreate -> onstart -> onReStoreInstanceState-> onResume   
+
+    总结: 没有设置configChanges属性，Android6.0，7.0，8.0系统手机表现都是一样的，当前的界面调用onSavelnstanceState走一遍流程，然后重启调用onRestorelnstanceState再走一遍完整流程，最终destory.
+
+#### AndroidManifest设置了configChanges,android:configChanges="orientation”竖屏，
+
+Android6.0
+
+    启动:
+    onCreate --> onStart --> onResume
+    切换横屏:
+    onPause -->onSavelnstanceState -->onStop -->onDestroy 
+    -->onCreate-->onStart-->onRestorelnstanceState-->onResume 
+
+(Android 7.0)
+
+    onConfigurationChanged-->onPause -->onSavelnstanceState -->onStop -->onDestroy 
+    -->onCreate-->onStart -->onRestorelnstanceState-->onResume 
+
+(Android 8.0)
+
+    onConfigurationChanged
+
+总结: 设置了configChanges属性为orientation之后Android6.0 同没有设置configChanges情况相同，完整的走完了两个生命周期，调用了onSavelnstanceState和onRestorelnstanceState方法;      
+Android 7.0则会先回调onConfigurationChanged方法，剩下的流程跟Android6.0 保持一致;                      
+Android 8.0 系统更是简单只是回调了onConfigurationChanged方法，并没有走Activity的生命周期方法。                                 
+
+## 2.Activity 的四个启动模式
 
 FLAG_ACTIVITY_SINGLE_TOP:对应 singleTop 启动模式。
 FLAG_ACTIVITY_NEW_TASK ：对应 singleTask 模式
 
-#### 标准模式
+### 标准模式
 
 就是不管 activity 存不存在都 new 一个 Activity 出来放在当前任务栈的栈顶，
 比如 ABCD 四个 Activity，D 处于栈顶，D 要通过 Intent 跳转到 A,则任务栈中就是 ABCDA。
 比较常见的场景是：社交应用中，点击查看用户 A 信息->查看用户 A 粉丝->在粉丝中挑选查看用户 B 信息->查看用户
 A 粉丝... 这种情况下一般我们需要保留用户操作 Activity 栈的页面所有执行顺序。
 
-#### Singletop
+### Singletop
 
 如果要启动的 Activity 处于栈顶，则调用 onNewIntent（）
 比如 ABCD 四个 Activity，D 处于栈顶，D 要通过 Intent 要跳转到它本身的 D ,调用 onNewIntent（）
@@ -44,7 +78,7 @@ A 粉丝... 这种情况下一般我们需要保留用户操作 Activity 栈的�
 用户收到几条好友请求的推送消息，需要用户点击推送通知进入到请求者个人信息页，将信息页设置为SingleTop
 模式就可以增强复用性。
 
-#### SingTask 根据 TaskAffinity 寻找对应的任务栈。
+### SingTask 根据 TaskAffinity 寻找对应的任务栈。
 
 如果任务栈不存在，那就新建任务栈，新建 activity 实例。
 如果任务栈存在：任务栈中不存在该 Activity 实例，就新建一个 Activity 压入栈
@@ -79,7 +113,7 @@ onNewIntent(Intent intent)方法就是提供给 singleTask 模式这种特定实
 
 使用举例：浏览器首页，用户从多个应用启动浏览器首页，主页面仅仅启动一次，其余都走onNewIntent,并且清空主页面上的其他页面。
 
-#### 单例模式
+### 单例模式
 
 一个实例单独占一个任务栈，全局唯一性，如果使用时已经存在就将该任务栈调度到前台
 任务栈是 APP 管理 Activity 的一种容器
@@ -87,14 +121,14 @@ onNewIntent(Intent intent)方法就是提供给 singleTask 模式这种特定实
 taskAffinity 属性能给 Activity 指定 task,但必须使用 FLAG_ACTIVITY_NEW_TASK 标记 默认的 taskAffinity
 常用于独立栈：比如闹钟的提醒页面，点击之后进入闹钟详情，再返回原app不影响原来的app
 
-### Activity/Dialog/PopupWindow/Toast与WindowState:
+## 3.Activity/Dialog/PopupWindow/Toast与WindowState:
 
     * Activity/Dialog/PopupWindow/Toast在WMS都有对应的WindowState，
     * 只是Activity/Dialog/PopupWindow的WindowState属于同一个AppWindowToken，也就是Activity的token,
     * 而Toast的WindowState属于自己独有的WindowToken。
     Window的flag：一些属性，比如脸靠近屏幕时不能触摸事件等flag
 
-### Android 程序中 Context 分成两种。一种是 Activity Context，另一种是 Application Context。
+## 4. Android 程序中 Context 分成两种。一种是 Activity Context，另一种是 Application Context。
 
     凡是跟 UI 相关的，都应该使⽤Activity 做为 Context 来处理
     通过 Application Context 来启动 Activity 的话。就需要 FLAG_ACTIVITY_NEW_TASK 属性，不管这个 Activity 是属于其他程序还是自己这个程序的。
@@ -131,9 +165,9 @@ getApplication0和getApplicationContext区别?
     情况如下:
     当同一个进程有多个apk的情况下，对于第二个apk是由provider方式拉起的，前面介绍过provider创建过程并不会初始化所在应用程序，此时执行返回的结果便是空。所以对于这种情况要做好判空
 
-### activit相关问题
+## 5.activit相关问题
 
-#### onDestory()一定会执行吗？
+### (1)onDestory()一定会执行吗？
 
 正常情况下的返回 onDestory 一定会执行的，
 后台强杀可能会发生：
@@ -141,11 +175,11 @@ getApplication0和getApplicationContext区别?
     当前仅有一个 Activity,这时候强杀，会执行，
     当前很多 activity 实例，从 A 到 B 到 C，后台强杀只会 A 的 onDestroy，BC 都不会执行了。
 
-#### onStop()一定会执行吗？
+### (2)onStop()一定会执行吗？
 
 如果要启动的是个透明的窗口,或者是对话框的样式,就不会执行。onstop 用于停止更新 UI。
 
-### Activity 的统一管理：
+### (3)怎么写一个Activity 的统一管理类：
 
 ⑴定义一个 ActivityManager 实现 Application.ActivityLifecycleCallbacks；
 ⑵List<WeakReference<Activity>> mActivityStack；
@@ -174,39 +208,8 @@ getApplication0和getApplicationContext区别?
         removeActivity
     }
 
-### 横竖屏切换时activity的生命周期
 
-#### AndroidManifest没有设置configChange属性的时候
-
-    启动：
-    oncreate -> onstart -> onResume
-    切换横竖屏->onPause -> onSaveInstaceState ->onstop->onDestrory 
-    重新启动可见->oncreate -> onstart -> onReStoreInstanceState-> onResume
-    总结: 没有设置configChanges属性，Android6.0，7.0，8.0系统手机表现都是一样的，当前的界面调用onSavelnstanceState走一遍流程，然后重启调用onRestorelnstanceState再走一遍完整流程，最终destory.
-
-#### AndroidManifest设置了configChanges,android:configChanges="orientation”竖屏，
-
-Android6.0
-
-    启动:
-    onCreate --> onStart --> onResume
-    切换横屏:
-    onPause -->onSavelnstanceState -->onStop -->onDestroy 
-    -->onCreate-->onStart-->onRestorelnstanceState-->onResume 
-
-(Android 7.0)
-
-    onConfigurationChanged-->onPause -->onSavelnstanceState -->onStop -->onDestroy 
-    -->onCreate-->onStart -->onRestorelnstanceState-->onResume 
-
-(Android 8.0)
-
-    onConfigurationChanged
-    总结: 设置了configChanges属性为orientation之后Android6.0 同没有设置configChanges情况相同，完整的走完了两个生命周期，调用了onSavelnstanceState和onRestorelnstanceState方法;
-    Android 7.0则会先回调onConfigurationChanged方法，剩下的流程跟Android6.0 保持一致;
-    Android 8.0 系统更是简单只是回调了onConfigurationChanged方法，并没有走Activity的生命周期方法。
-
-### Intent 可传递的数据类型有 3 种
+## 6.Intent 可传递的数据类型有 3 种
 
 1.java 的 8 种基本数据类型（boolean byte char short int long float double）、String 以及他们的数组形式；
 2.Bundle 类，Bundle 是一个以键值对的形式存储可传输数据的容器；
@@ -221,11 +224,11 @@ Android6.0
     3.通过内存共享，使用静态变量或者使用 EventBus 等类似的通信工具。
     4.通过文件共享。
 
-### Activity加载的流程
+## 7.Activity加载的流程
 
 App 启动流程(基于Android8.0)
 
-        点击桌面 App图标，Launcher进程采用 Bi5rIPC(具体为ActivityManager.getService 获取 AMS 实例)system server的AMS发起 startActivity请求system _server 进程收到请求后，向 Zygote 进程发送创建进程的请求Zygote 进程 fork 出新的子进程，即 App 进程，
+    点击桌面 App图标，Launcher进程采用 Bi5rIPC(具体为ActivityManager.getService 获取 AMS 实例)system server的AMS发起 startActivity请求system _server 进程收到请求后，向 Zygote 进程发送创建进程的请求Zygote 进程 fork 出新的子进程，即 App 进程，
     App 进程创建即初始化 ActivityThread，然后通过 BinderIPC 向 system server 进程的 AMS 发起 attachApplication 请求，system server 进程的 AMS 在收到 attachApplication 请求后，做一系列操作后，通知 ApplicationThreadbindApplication，然后发送 H.BIND APPLICATION 消息
     主线程收到 H.BIND APPLICATION 消息，调用handleBindApplication 处理后做一系列的初始化操作初始化 Application 等
     system server 进程的 AMS 在 bindApplication 后，会调用ActivityStackSupervisor.attachApplicationLocked，之后经过一系列操作，在 realStartActivityLocked 方法通过Binder IPC 向 App 进程发送scheduleLaunchActivity 请求。
