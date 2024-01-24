@@ -1,6 +1,7 @@
 package com.example.myapplication;
 
 import android.os.Bundle;
+import android.view.WindowManager;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -53,5 +54,6 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new MyAdapter(mMyViewModel.mItemDataList.getValue());
         mAdapter.setItemClickListener(mItemClickListener);
         mRecyclerView.setAdapter(mAdapter);
+        WindowManager.
     }
 }

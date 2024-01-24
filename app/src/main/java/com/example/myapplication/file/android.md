@@ -5,13 +5,15 @@
 onCreate（）：是 activity 的创建时候调用，做一些初始化布局之类的操作                        
 onStart（）：即将显示页面的时候调用。用户无法操作，也是初始化操作，                               
 onresume（）：当前 Activity 处于栈顶，获取焦点可以和用户进行交互，处于运行状态                
-onPause（）：暂停状态。可能被其他的 activity 覆盖，仍然可见，但是失去焦点不能和用户进行交互                         
-onstop（）：完全不可见的时候被调用。处于停止状态。内存不足这个 Activity 可能会被杀死，进行资源回收。                
+onPause（）：暂停状态。可能被其他的 activity
+覆盖，仍然可见，但是失去焦点不能和用户进行交互                         
+onstop（）：完全不可见的时候被调用。处于停止状态。内存不足这个 Activity
+可能会被杀死，进行资源回收。                
 ondestroy（）：activity 被销毁的时候调用，进行资源释放。                 
 onRestart（）：从不可见的时候变成可见。            
 成对出现：onCreate 和 onDestroy：根据 activity 创建和销毁               
 onStart 和 onstop：根据 activity 是否可见，            
-onResume 和 onpause：根据 activity 是否显示在前台                  
+onResume 和 onpause：根据 activity 是否显示在前台
 
 ### (1)从A->B->A
 
@@ -32,7 +34,8 @@ onResume 和 onpause：根据 activity 是否显示在前台
     切换横竖屏->onPause -> onSaveInstaceState ->onstop->onDestrory 
     重新启动可见->oncreate -> onstart -> onReStoreInstanceState-> onResume   
 
-总结: 没有设置configChanges属性，Android6.0，7.0，8.0系统手机表现都是一样的，当前的界面调用onSavelnstanceState走一遍流程，然后重启调用onRestorelnstanceState再走一遍完整流程，最终destory.
+总结:
+没有设置configChanges属性，Android6.0，7.0，8.0系统手机表现都是一样的，当前的界面调用onSavelnstanceState走一遍流程，然后重启调用onRestorelnstanceState再走一遍完整流程，最终destory.
 
 #### AndroidManifest设置了configChanges,android:configChanges="orientation”竖屏，
 
@@ -53,14 +56,17 @@ Android 8.0
 
     onConfigurationChanged
 
-总结: 设置了configChanges属性为orientation之后Android6.0 同没有设置configChanges情况相同，完整的走完了两个生命周期，调用了onSavelnstanceState和onRestorelnstanceState方法;      
-Android 7.0则会先回调onConfigurationChanged方法，剩下的流程跟Android6.0 保持一致;                      
-Android 8.0 系统更是简单只是回调了onConfigurationChanged方法，并没有走Activity的生命周期方法。                                 
+总结: 设置了configChanges属性为orientation之后Android6.0
+同没有设置configChanges情况相同，完整的走完了两个生命周期，调用了onSavelnstanceState和onRestorelnstanceState方法;      
+Android 7.0则会先回调onConfigurationChanged方法，剩下的流程跟Android6.0
+保持一致;                      
+Android 8.0 系统更是简单只是回调了onConfigurationChanged方法，并没有走Activity的生命周期方法。
 
 ## 2.Activity 的四个启动模式
 
-FLAG_ACTIVITY_SINGLE_TOP:对应 singleTop 启动模式。                                                             
-FLAG_ACTIVITY_NEW_TASK:对应 singleTask 模式。 
+FLAG_ACTIVITY_SINGLE_TOP:对应 singleTop
+启动模式。                                                             
+FLAG_ACTIVITY_NEW_TASK:对应 singleTask 模式。
 
 ### 标准模式
 
@@ -79,22 +85,25 @@ A 粉丝... 这种情况下一般我们需要保留用户操作 Activity 栈的�
 用户收到几条好友请求的推送消息，需要用户点击推送通知进入到请求者个人信息页，将信息页设置为SingleTop
 模式就可以增强复用性。
 
-### SingTask 
-根据 TaskAffinity 寻找对应的任务栈。                                                   
-如果任务栈不存在，那就新建任务栈，新建 activity 实例。                                                                           
-如果任务栈存在：任务栈中不存在该 Activity 实例，就新建一个 Activity 压入栈                                                                        
-             任务栈中存在该实例，将该实例顶部的实例出栈，并将自己置于栈顶                                                       
+### SingTask
 
-比如 ABCD，要从 D 通过 Intent 跳转到 B（走 onNewIntent），则弹出 CD 销毁，变成 AB          
+根据 TaskAffinity 寻找对应的任务栈。                                                   
+如果任务栈不存在，那就新建任务栈，新建 activity
+实例。                                                                           
+如果任务栈存在：任务栈中不存在该 Activity 实例，就新建一个 Activity
+压入栈                                                                        
+任务栈中存在该实例，将该实例顶部的实例出栈，并将自己置于栈顶
+
+比如 ABCD，要从 D 通过 Intent 跳转到 B（走 onNewIntent），则弹出 CD 销毁，变成 AB
 
 举例，首页肯定在栈底。                 
 使用举例：浏览器首页，用户从多个应用启动浏览器首页，主页面仅仅启动一次，其余都走onNewIntent,并且清空主页面上的其他页面。
-                                
+
 onNewIntent 的调用时机：singleTop、singleTask、singleInstance 模式下都会调用 onNewIntent()。
 目的：复用Activity;
 onCreate() 和 onNewIntent() 不会被同时调用。
 
-调用 onNewIntent()生命周期如下：onNewIntent()->onRestart()->onStart()->onResume()。           
+调用 onNewIntent()生命周期如下：onNewIntent()->onRestart()->onStart()->onResume()。
 
 onNewIntent 方法， 如下所示:
 
@@ -103,15 +112,15 @@ onNewIntent 方法， 如下所示:
         setIntent(intent); 
     }
 
-注意：没有在 onNewIntent()里面设置 setIntent()方法，将最新的 intent 设置给这个 activity 实例。那么在 onNewIntent()里面的 getIntent()得到的 intent 都是旧数据。             
+注意：没有在 onNewIntent()里面设置 setIntent()方法，将最新的 intent 设置给这个 activity 实例。那么在
+onNewIntent()里面的 getIntent()得到的 intent 都是旧数据。
 
-onNewIntent(Intent intent)方法就是提供给 singleTask 模式这种特定实现的有效保持 intent 上下文的方法；             
-
+onNewIntent(Intent intent)方法就是提供给 singleTask 模式这种特定实现的有效保持 intent 上下文的方法；
 
 ### 单例模式
 
 一个实例单独占一个任务栈，全局唯一性，如果使用时已经存在就将该任务栈调度到前台。
-                                                      
+
 任务栈是 APP 管理 Activity 的一种容器 ，一般一个应用程序一个任务栈，任务栈管理该应用的 activity 进出栈
 
 taskAffinity 属性能给 Activity 指定 task,但必须使用 FLAG_ACTIVITY_NEW_TASK 标记
@@ -125,13 +134,14 @@ taskAffinity 属性能给 Activity 指定 task,但必须使用 FLAG_ACTIVITY_NEW
     * 只是Activity/Dialog/PopupWindow的WindowState属于同一个AppWindowToken，也就是Activity的token,
     * 而Toast的WindowState属于自己独有的WindowToken。
 
-
 ## 4. Android 程序中 Context 分成两种。
-一种是 Activity Context，另一种是 Application Context。                            
 
-凡是跟 UI 相关的，都应该使⽤Activity 做为 Context 来处理                 
+一种是 Activity Context，另一种是 Application Context。
 
-通过 Application Context 来启动 Activity 的话。就需要 FLAG_ACTIVITY_NEW_TASK 属性，不管这个 Activity 是属于其他程序还是自己这个程序的。
+凡是跟 UI 相关的，都应该使⽤Activity 做为 Context 来处理
+
+通过 Application Context 来启动 Activity 的话。就需要 FLAG_ACTIVITY_NEW_TASK 属性，不管这个 Activity
+是属于其他程序还是自己这个程序的。
 
 使用：
 
@@ -144,23 +154,26 @@ taskAffinity 属性能给 Activity 指定 task,但必须使用 FLAG_ACTIVITY_NEW
     context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?
 
 因为 ⾮Activity 类型的 Context 并没有所谓的任务栈，所以待启动的 Activity 就找不到栈了。
-为待启动的 Activity 指定 FLAG_ACTIVITY_NEW_TASK 标记位，这样启动的时候就为它创建一个新的任务栈，而此时 Activity 是以 singleTask 模式启动的。
+为待启动的 Activity 指定 FLAG_ACTIVITY_NEW_TASK 标记位，这样启动的时候就为它创建一个新的任务栈，而此时
+Activity 是以 singleTask 模式启动的。
 
 在 Application 和 Service 中去 layout inflate 也是合法的，但是会使用系统默认的主题样式，如果你自定义了某些样式可能不会被使用。所以这种方式也不推荐使用。
-                                                
+
 对于 startActivity 操作                                    
 ①当为 Activity Context 则可直接使用                                                             
-②当为其他 Context, 则必须带上 FLAG_ACTIVITY_NEW_TASK flags 才能使用，因为⾮ Activity context 启动 Activity 没有 Activity 栈，则无法启动，因此需要加开启新的栈;
-                    
+②当为其他 Context, 则必须带上 FLAG_ACTIVITY_NEW_TASK flags 才能使用，因为⾮ Activity context 启动
+Activity 没有 Activity 栈，则无法启动，因此需要加开启新的栈;
+
 另外 UI 相关要 Activity 中使用
 
 getApplication和getApplicationContext区别?
 
-1.对于Activity/Service来说,getApplication(和getApplicationContext0的返回值完全相同; 除非厂商修改过接口;                                  
+1.对于Activity/Service来说,getApplication(和getApplicationContext0的返回值完全相同;
+除非厂商修改过接口;                                  
 2.BroadcastReceiver在onReceive的过程，能使用getBaseContext.getApplicationContext获取所在Application,而无法使用getApplication;                            
 3.ContentProvider能使用getContext0.getApplicationContext获取所在应用程序。绝大多数情况下没有问题，但是有可能会出现空指针的问题，                    
 情况如下:                        
-当同一个进程有多个apk的情况下，对于第二个apk是由provider方式拉起的，前面介绍过provider创建过程并不会初始化所在应用程序，此时执行返回的结果便是空。所以对于这种情况要做好判空。                                  
+当同一个进程有多个apk的情况下，对于第二个apk是由provider方式拉起的，前面介绍过provider创建过程并不会初始化所在应用程序，此时执行返回的结果便是空。所以对于这种情况要做好判空。
 
 ## 5.activit相关问题
 
@@ -168,7 +181,7 @@ getApplication和getApplicationContext区别?
 
 正常情况下的返回 onDestory 一定会执行的，
 后台强杀可能会发生：
-               
+
 当前仅有一个 Activity,这时候强杀，会执行，                                
 当前很多 activity 实例，从 A 到 B 到 C，后台强杀只会 A 的 onDestroy，BC 都不会执行了。
 
@@ -178,8 +191,9 @@ getApplication和getApplicationContext区别?
 
 ### (3)怎么写一个Activity 的统一管理类：
 
-⑴定义一个 ActivityManager 实现 Application.ActivityLifecycleCallbacks；                                        
-⑵List<WeakReference<Activity>> mActivityStack；                                   
+⑴定义一个 ActivityManager 实现
+Application.ActivityLifecycleCallbacks；                                        
+⑵List<WeakReference<Activity>> mActivityStack；
 
 七个方法
 
@@ -205,12 +219,12 @@ getApplication和getApplicationContext区别?
         removeActivity
     }
 
-
 ## 6.Intent 可传递的数据类型有 3 种
 
-1.java 的 8 种基本数据类型（boolean byte char short int long float double）、String 以及他们的数组形式；                            
+1.java 的 8 种基本数据类型（boolean byte char short int long float double）、String
+以及他们的数组形式；                            
 2.Bundle 类，Bundle 是一个以键值对的形式存储可传输数据的容器；                                
-3.实现了 Serializable 和 Parcelable 接口的对象，这些对象实现了序列化。                                  
+3.实现了 Serializable 和 Parcelable 接口的对象，这些对象实现了序列化。
 
     Intent 传输数据的大小有限制吗？如何解决？
 
@@ -227,20 +241,29 @@ getApplication和getApplicationContext区别?
 
 App 启动流程(基于Android8.0)
 
-点击桌面 App图标，Launcher进程采用 BinderIPC(具体为ActivityManager.getService 获取 AMS 实例)system server的AMS发起 startActivity请求                    
-system _server 进程收到请求后，向 Zygote 进程发送创建进程的请求Zygote 进程 fork 出新的子进程，即 App 进程，
+点击桌面 App图标，Launcher进程采用 BinderIPC(具体为ActivityManager.getService 获取 AMS 实例)system
+server的AMS发起 startActivity请求                    
+system _server 进程收到请求后，向 Zygote 进程发送创建进程的请求Zygote 进程 fork 出新的子进程，即 App
+进程，
 
-App 进程创建即初始化 ActivityThread，然后通过 BinderIPC 向 system server 进程的 AMS 发起 attachApplication 请求，system server 进程的 AMS 在收到 attachApplication 请求后，做一系列操作后，通知 ApplicationThreadbindApplication，然后发送 H.BIND APPLICATION 消息
+App 进程创建即初始化 ActivityThread，然后通过 BinderIPC 向 system server 进程的 AMS 发起
+attachApplication 请求，system server 进程的 AMS 在收到 attachApplication 请求后，做一系列操作后，通知
+ApplicationThread去bindApplication，然后发送 H.BIND APPLICATION 消息
 
-主线程收到 H.BIND APPLICATION 消息，调用handleBindApplication 处理后做一系列的初始化操作初始化 Application 等
+主线程收到 H.BIND APPLICATION 消息，调用handleBindApplication 处理后做一系列的初始化操作初始化
+Application 等
 
-system server 进程的 AMS 在 bindApplication 后，会调用ActivityStackSupervisor.attachApplicationLocked，之后经过一系列操作，在 realStartActivityLocked 方法通过Binder IPC 向 App 进程发送scheduleLaunchActivity 请求。
+system server 进程的 AMS 在 bindApplication
+后，会调用ActivityStackSupervisor.attachApplicationLocked，之后经过一系列操作，在
+realStartActivityLocked 方法通过Binder IPC 向 App 进程发送scheduleLaunchActivity 请求。
 
 app的binder 线程 (ApplicationThread) 在收到请求后，通过 handler 向主线程发送LAUNCH ACTIVITY 消息;
 
-主线程收到 message后经过 handleLaunchActivity，performLaunchActivity 方法，然后通过反射机制创建目标Activity ;
+主线程收到 message后经过 handleLaunchActivity，performLaunchActivity
+方法，然后通过反射机制创建目标Activity ;
 
-通过Activityattach方法创建 window并目和 Activity 关联，然后设置 WindowManager 用来管理 window，然后通知 Activity 已创建，即调用 onCreate
+通过Activityattach方法创建 window并目和 Activity 关联，然后设置 WindowManager 用来管理 window，然后通知
+Activity 已创建，即调用 onCreate
 
 然后调用 handleResumeActivity，Activity可见
 
@@ -250,24 +273,30 @@ app的binder 线程 (ApplicationThread) 在收到请求后，通过 handler 向�
 
 ## BroadcastReceiver 与LocalBroadcastReceiver 有什么区别?
 
-BroadcastReceiver 是跨应用广播，利用Binder机制实现支持动态和静态两种方式注册方式。                                         
-LocalBroadcastReceiver 是应用内广播，利用Handler 实现，利用了IntentFilter的match功能，提供消息的发布与接收功能，实现应用内通信，效率和安全性比较 高仅支持动态注册
+BroadcastReceiver
+是跨应用广播，利用Binder机制实现支持动态和静态两种方式注册方式。                                         
+LocalBroadcastReceiver 是应用内广播，利用Handler
+实现，利用了IntentFilter的match功能，提供消息的发布与接收功能，实现应用内通信，效率和安全性比较 高仅支持动态注册
 
 # Services
 
 ## 1.IntentService
+
 IntentService是Service的子类，继承与Service类，用于处理需要异步请求。
 
-用户通过调用 Context.StartService(Intent)发送请求，服务根据需要启动，使用工作线程依次处理每个Intent，并在处理完所有工作后自身停止服务。            
-使用时，扩展IntentService并实现onHandleIntent(android.content.Intent),IntentService接收Intent，启动工作线程，并在适当时机停止服务。                  
+用户通过调用 Context.StartService(Intent)
+发送请求，服务根据需要启动，使用工作线程依次处理每个Intent，并在处理完所有工作后自身停止服务。            
+使用时，扩展IntentService并实现onHandleIntent(android.content.Intent)
+,IntentService接收Intent，启动工作线程，并在适当时机停止服务。                  
 所有的请求都在同一个工作线程上处理，一次处理一个请求，所以处理完所以的请求可能会花费很长的时间，但由于IntentService是另外了线程来工作，所以保证不会阻止App的主线程。
 
 ## 2.IntentService与Service的区别
 
 ### 何时使用
 
-Service用于没有UI工作的任务，但不能执行长任务(长时间的任务)，如果需要Service来执行长时间的任务，则必须手动开启个线程来执行该Service。                                                   
-IntentService可用于执行不与主线程沟通的长任务.                      
+Service用于没有UI工作的任务，但不能执行长任务(长时间的任务)
+，如果需要Service来执行长时间的任务，则必须手动开启个线程来执行该Service。                                                   
+IntentService可用于执行不与主线程沟通的长任务.
 
 ### 触发方法
 
@@ -276,25 +305,30 @@ IntentService通过Intent来触发，开启一个新的工作线 程并在线程
 
 ### 运行环境
 
-Service 在App主线程上运行，没有与用户交互，即在后台运行，如果执行长时间的请求任务会阻止主线程工作。                                     
+Service
+在App主线程上运行，没有与用户交互，即在后台运行，如果执行长时间的请求任务会阻止主线程工作。                                     
 IntentService在自己单独开启的工作线程上运行，即使执行长时间的请求任务也不会阻止主线程工作。
 
 ### 何时停止
 
-如果执行了Service，我们是有责任在其请求任务完成后关闭服务，通过调用 stopSelf 或 stopService 来结束服务.                                    
-IntentService会在执行完所有的请求任务后自行关闭服务，所以我们不必额外调用stopSelf去关闭它.                     
+如果执行了Service，我们是有责任在其请求任务完成后关闭服务，通过调用 stopSelf 或 stopService
+来结束服务.                                    
+IntentService会在执行完所有的请求任务后自行关闭服务，所以我们不必额外调用stopSelf去关闭它.
 
 ## 3. 谈一谈startService和bindService的区别，生命周期以及使用场景?
 
 ### 1、生命周期上的区别
-执行startService时，Service会经历onCreate->onStartCommand。当执行stopService时，直接调用onDestroy方法。调用者如果没有stopService，Service
-会一直在后台运行，下次调用者再起来仍然可以stopService。                                                                
 
-执行bindService时，Service会经历onCreate->onBind。这个时候调用者和Service绑定在一起。调用者调用unbindService方法或者调用者Context不存在了 (
-如Activity被finish了)，Service就会调用onUnbind->onDestroy。这里所谓的绑定在一起就是说两者共存亡了。                                    
-                                               
+执行startService时，Service会经历onCreate->
+onStartCommand。当执行stopService时，直接调用onDestroy方法。调用者如果没有stopService，Service
+会一直在后台运行，下次调用者再起来仍然可以stopService。
+
+执行bindService时，Service会经历onCreate->
+onBind。这个时候调用者和Service绑定在一起。调用者调用unbindService方法或者调用者Context不存在了 (
+如Activity被finish了)，Service就会调用onUnbind->onDestroy。这里所谓的绑定在一起就是说两者共存亡了。
+
 多次调用startService,该Service只能被创建一次，即该Service的onCreate方法只会被调用一次。                                           
-但是每次调用startService，onStartCommand方法都会被调用。Service的onStart方法在API5时被废弃，替代它的是onStartCommand方法。                        
+但是每次调用startService，onStartCommand方法都会被调用。Service的onStart方法在API5时被废弃，替代它的是onStartCommand方法。
 
 第一次执行bindService时，onCreate和onBind方法会被调用，但是多次执行bindService方法，onCreate和onBind方法并不会被多次调用，即并不会多次创建服务和绑定服务。
 
@@ -306,12 +340,13 @@ onBind回调方法将返回给客户端一个IBinder接口实例，IBinder允许
 ### 3、既使用startService又使用bindService的情况
 
 如果一个Service又被启动又被绑定，则该Service会一直在后台运行。首先不管如何调用，onCreate始终只会调用一次。对应startService调用多少次，Service的onStart
-方法便会调用多少次。                                                
+方法便会调用多少次。
 
 Service的终止，需要unbindService和stopService同时调用才行。不管startService与bindService的调用顺序。                              
-如果先调用unbindService，此时服务不会自动终止，再调用stopService之后，服务才会终止;               
+如果先调用unbindService，此时服务不会自动终止，再调用stopService之后，服务才会终止;
 
-如果先调用stopService，此时服务也不会终止，而再调用unbindService或者之前调用bindService的Context不存在了(如Activity被finish的时候)之后，服务才会自动停止。            
+如果先调用stopService，此时服务也不会终止，而再调用unbindService或者之前调用bindService的Context不存在了(
+如Activity被finish的时候)之后，服务才会自动停止。
 
 那么，什么情况下既使用startService，又使用bindService呢?                               
 如果你只是想要启动一个后台服务长期进行某项任务，那么使用startService便可以了。如果你还想要与正在运行的Service取得联系，那么有两种方法:
@@ -321,19 +356,20 @@ Service的终止，需要unbindService和stopService同时调用才行。不管s
 ## 4.本地服务与远程服务
 
 本地服务依附在主进程上，在一定程度上节约了资源。本地服务因为是在同一进程，因此不需要IPC，也不需要AIDL。相应bindservice会方便很多。
-缺点是主进程被kill后，服务便会终止。                
-              
-远程服务是独立的进程，对应进程名格式为所在包名加上你指定的android:process字符串。由于是独立的进程，因此在Activity所在进程被kill的是偶，该服务依然在运行。
-缺点是该服务是独立的进程，会占用一定资源，并且使用AIDL进行IPC稍微麻烦一点。     
+缺点是主进程被kill后，服务便会终止。
 
-对于startservice来说，不管是本地服务还是远程服务，我们需要做的工作都一样简单。             
+远程服务是独立的进程，对应进程名格式为所在包名加上你指定的android:
+process字符串。由于是独立的进程，因此在Activity所在进程被kill的是偶，该服务依然在运行。
+缺点是该服务是独立的进程，会占用一定资源，并且使用AIDL进行IPC稍微麻烦一点。
+
+对于startservice来说，不管是本地服务还是远程服务，我们需要做的工作都一样简单。
 
 ## 5.Service如何进行保活?
 
 利用系统广播拉活                               
 利用系统service拉活                               
 利用Native进程拉活<Android5.0以后失效> fork进行监控主进程，利用native拉活                           
-利用JobScheduler机制拉活<Android5.0以后>利用账号同步机制拉活                           
+利用JobScheduler机制拉活<Android5.0以后>利用账号同步机制拉活
 
 # ContentProvider是如何实现数据共享的?
 
@@ -342,24 +378,29 @@ ContentResolver (内容解析者): 通过URI的不同来操作不同的ContentPr
 ContentObserver (内容观察者): 观察特定URI引起的数据库的变化。
 通过ContentResolver进行注册，观察数据是否发生变化及时通知刷新页面(通过Handler通知主线程更 新UI)
 
-ContentProvider ：内容提供者，对外提供了统一的访问数据的接口,用于对外提供数据,比如联系人应用中就是用了ContentProvider           
-一个应用可以实现ContentProvider来提供给别的应用操作通过ContentResolver来操作别的应用数据            
+ContentProvider
+：内容提供者，对外提供了统一的访问数据的接口,用于对外提供数据,比如联系人应用中就是用了ContentProvider           
+一个应用可以实现ContentProvider来提供给别的应用操作通过ContentResolver来操作别的应用数据
 
-ContentResolver ：内容解析者，用于获取内容提供者提供的数据,通过URI的不同来操作不同的ContentProvider中的数据              
-ContentResolver.NotifyChanged(uri)发出消息                        
+ContentResolver
+：内容解析者，用于获取内容提供者提供的数据,通过URI的不同来操作不同的ContentProvider中的数据              
+ContentResolver.NotifyChanged(uri)发出消息
 
-ContentObserver ：内容监听者,可以监听数据的改变状态 观察(捕捉)特定的Uri引起的数据库的变化,及时通知刷新页面(通过Handler通知主线程更 新UI)               
-ContentResolver.registerContentObserver监听消息                          
+ContentObserver ：内容监听者,可以监听数据的改变状态 观察(捕捉)
+特定的Uri引起的数据库的变化,及时通知刷新页面(通过Handler通知主线程更 新UI)               
+ContentResolver.registerContentObserver监听消息
 
 概括:                              
-使用ContentResolver来获取ContentProvider提供的数据，同时注册ContentObserver监听数据的变化    
+使用ContentResolver来获取ContentProvider提供的数据，同时注册ContentObserver监听数据的变化
 
 # Fragment
-## Fragment从创建到销毁整个生命周期中涉及到的方法依次为：
-onAttach()→onCreate()→onCreateView()→onActivityCreated()→onStart()→onResume()                   
-→onPause()→onStop()→onDestroyView()→onDestroy()→onDetach()， 
 
-1.打开界面                       
+## Fragment从创建到销毁整个生命周期中涉及到的方法依次为：
+
+onAttach()→onCreate()→onCreateView()→onActivityCreated()→onStart()→onResume()                   
+→onPause()→onStop()→onDestroyView()→onDestroy()→onDetach()，
+
+打开界面                       
 onCreate ()->onCreateView()->onActivityCreated()->onStart()->onResume()                   
 按下主屏幕键                       
 onPause() ->onStop ()                
@@ -369,55 +410,252 @@ onStart()->onResume ()
 onPause ()->onStop()->onDestroyView()->onDestroy()->onDetach()
 
 ![img.png](pic/img_1.png)
-和Activity有不同的方法：          
+
+和Activity有不同的方法：                                                                                
 onAttach()：当Fragment和Activity建立关联时调用；            
 onCreateView()：当fragment创建视图调用，在onCreate之后；          
 onActivityCreated()：当与Fragment相关联的Activity完成onCreate()之后调用；           
 onDestroyView()：在Fragment中的布局被移除时调用；                          
-onDetach()：当Fragment和Activity解除关联时调用；              
+onDetach()：当Fragment和Activity解除关联时调用；
 
 onViewCreated在onActivityCreated之前
 
 ## Fragment中add、remove、replace区别
+
 首先获取FragmentTransaction对象：
 
     FragmentTransaction transaction = getFragmentManager().beginTransaction();
 
-两种方法不同之处：是否要清空容器再添加fragment的区别，用法上add配合hide或是remove使用，replace一般单独出现。                          
+两种方法不同之处：是否要清空容器再添加fragment的区别，用法上add配合hide或是remove使用，replace一般单独出现。
 
 添加add: 一般会配合hide使用
 
     transaction.add(R.id.fragment_container, oneFragment).hide(twoFragment).commit()
 
-第一个参数是容器id， 第二个参数是要添加的fragment，添加不会清空容器中的内容，不停的往里面添加。 
+第一个参数是容器id， 第二个参数是要添加的fragment，添加不会清空容器中的内容，不停的往里面添加。
 
 不允许添加同一个fragment实例，这是非常重要的特点。
-如果一个fragment已经进来的话，再次添加的话会报异常错误的 ，添加进来的fragment都是可见的（visible），后添加的fragment会展示在先添加的fragment上面，在绘制界面的时候会绘制所有可见的view                      
-所以大多数add都是和hide或者是remove同时使用的。这样可以节省绘制界面的时间，节省内存消耗，是推荐的用法。                   
+如果一个fragment已经进来的话，再次添加的话会报异常错误的
+，添加进来的fragment都是可见的（visible），后添加的fragment会展示在先添加的fragment上面，在绘制界面的时候会绘制所有可见的view                      
+所以大多数add都是和hide或者是remove同时使用的。这样可以节省绘制界面的时间，节省内存消耗，是推荐的用法。
 
-替换replace:                            
+替换replace:
 
     transaction.replace(R.id.fragment_container, oneFragment).commit()
 
-替换会把容器中的所有内容全都替换掉，有一些app会使用这样的做法，保持只有一个fragment在显示，减少了界面的层级关系。          
+替换会把容器中的所有内容全都替换掉，有一些app会使用这样的做法，保持只有一个fragment在显示，减少了界面的层级关系。
 
-相同之处：每次add和replace都要走一遍fragment 的周期。                        
+相同之处：每次add和replace都要走一遍fragment 的周期。
 
 处理方式：
-首先在add的时候，加上一个tab参数 
+首先在add的时候，加上一个tab参数
 
     transaction.add(R.id.content, ContentFragment,“tag”);
 
 然后当ContentFragment引用被回收置空的话，先通过
 
     ContentFragment＝FragmentManager.findFragmentByTag("tag"); 
+
 找到对应的引用，然后继续上面的hide,show来处理;
 
 ## FragmentPagerAdapter与FragmentStatePagerAdapter的区别与使用场景
+
 相同点:二者都继承PagerAdapter                      
-不同点:FragmentPagerAdapter的每个Fragment会持久的保存在FragmentManager中，只要用户可以返回到页面中，它都不会被销毁。 因此适用于那些数据相对静态的页，Fragment数量也比较少的那种；                          
+不同点:FragmentPagerAdapter的每个Fragment会持久的保存在FragmentManager中，只要用户可以返回到页面中，它都不会被销毁。
+因此适用于那些数据相对静态的页，Fragment数量也比较少的那种；                          
 FragmentStatePagerAdapter只保留当前页面，当页面不可见时，该Fragment就会被消除，释放其资源。因此适用于那些数据动态性较大、占用内存较多，多Fragment的情况；
 
+# View整体机制
+![img.png](pic/app启动到view绘制.png)
+
+## 绘制流程起点
+
+Activity对View的管理委托给Window，外界访问Window是通过WindowManager，windowManager实现了viewManager接口（具有addView,updateView,removeView能力）        
+因此WindowManager具有对view的管理能力，WindowManagerImpl继承了WindowManager，但是并没有实现WindowManager的三大操作,而是将所有的操作全部委托给WindowManagerGlobal来实现。           
+WindowManagerGlobal以工厂的形式向外提供自己的实例，存储Window对应的所有View：Window对应的所有ViewRootImpl,Window对应的所有的布局参数,存储正在被删除的View对象，或者说是那些已经调用removeView方法但是删除操作还未完成的Window对象
+
+    // 存储Window对应的所有View：
+    private final ArrayList<View> mViews = new ArrayList<View>();
+    // 存储Window对应的所有ViewRootImpl：
+    private final ArrayList<ViewRootImpl> mRoots = new ArrayList<ViewRootImpl>();
+    // 存储Window对应的所有的布局参数：
+    private final ArrayList<WindowManager.LayoutParams> mParams =
+    new ArrayList<WindowManager.LayoutParams>();
+    // 存储正在被删除的View对象，或者说是那些已经调用removeView方法但是删除操作还未完成的Window对象：
+    private final ArraySet<View> mDyingViews = new ArraySet<View>();
+
+WindowManagerGlobal的addView方法中通过ViewRootImpl的setView方法来更新界面并完成Window的添加过程：
+在ViewRootImpl的setView方法中又会调用requestLayout方法来完成异步刷新请求。
+
+调用requestLayout后，先加同步屏障，然后监听vsync信号，等着vsync信号到达后，把doTraversal这个函数包裹成一个异步消息加入到messageQueue      
+doTraversal这个函数被封装成了一个runnable异步消息,屏障解除和3大流程开始，都是这个异步消息的执行体中做的事情
+所以这个同步屏障的作用就是，在调用requestLayout后到vsync信号到达的这段时间内，不能在主线程执行其他任何任务，保证ui显示是第一位的
+
+    @Override
+    public void requestLayout() {
+        if (!mHandlingLayoutInLayoutRequest) {
+            //校验主线程
+            checkThread();
+            mLayoutRequested = true;
+            //调用这个方法启动绘制流程
+            scheduleTraversals();
+        }
+    }
+
+    //在调用scheduleTraversals()的时候 postSyncBarrier添加同步消息屏障
+    @UnsupportedAppUsage
+    void scheduleTraversals() {
+        if (!mTraversalScheduled) {
+            mTraversalScheduled = true;
+            //1. 往主线程的Handler对应的MessageQueue发送一个同步屏障消息
+            mTraversalBarrier = mHandler.getLooper().getQueue().postSyncBarrier();
+            //2.将mTraversalRunnable保存到Choreographer中
+            mChoreographer.postCallback(
+                    Choreographer.CALLBACK_TRAVERSAL, mTraversalRunnable, null);
+            if (!mUnbufferedInputDispatch) {
+                scheduleConsumeBatchedInput();
+            }
+            notifyRendererOfFramePending();
+            pokeDrawLockIfNeeded();
+        } 
+    
+    //在doTraversal方法中移除同步消息屏障
+    void doTraversal() {
+        if (mTraversalScheduled) {
+            mTraversalScheduled = false;
+            //移除同步屏障
+            mHandler.getLooper().getQueue().removeSyncBarrier(mTraversalBarrier);
+            ...
+            //开始绘制
+            performTraversals();
+        }
+    }
+
+APP的ApplicationThread在收到scheduleLaunchActivity请求后，通过 handler 向主线程发送LAUNCH ACTIVITY 消息        
+主线程收到 message后,执行handleLaunchActivity()->performLaunchActivity()->callActivityOnCreate()->Activity.onCreate()    
+在performLaunchActivity方法中
+1.通过类加载器创建Activity的实例对象 
+2.调用attach方法来关联运行过程中所依赖的一系列上下文环境变量 
+
+在attach方法中 
+创建Activity所属的Window对象并为其设置回调接口,
+decorView显示过程：
+Activity的setContentView中 调用 PhoneWindowde的setContentView方法 完成了DecorView的创建和初始化， Activity的布局文件也成功添加到DecorView中
+
+ActivityThread的handleResumeActivity方法会调用Activity的onResume方法 
+onResume方法中会调用Activity的makeVisible方法让DecorView真正完成添加和显示过程
+makeVisible方法中WindowManager的addView()方法将Activity的根View(DecorView)添加上去，进而开始绘制流程
+
+handleResumeActivity()方法，在方法中先调用Activity.onResume()方法，再执行WindowManager的addView()方法将Activity的根View(DecorView)添加上去，进而开始绘制流程。
+
+## 绘制过程
+绘制流程是由最外层的View开始，一步一步向内传递执行。而整个过程又是递归等待的，最外层的View需要等内层所有的View执行完绘制流程才结束
+从performTraversals开始
+
+    private void performTraversals() {
+
+        //计算DecorView根View的MeasureSpec
+        int childWidthMeasureSpec = getRootMeasureSpec(mWidth, lp.width);
+        int childHeightMeasureSpec = getRootMeasureSpec(mHeight, lp.height);
+    
+        performMeasure(childWidthMeasureSpec, childHeightMeasureSpec);
+    
+        performLayout(lp, mWidth, mHeight);
+    
+        performDraw();
+    }
+### Measure
+measure流程开始执行之前，会先计算出DecorView的MeasureSpec。如果是match_parent就是屏幕的宽高
+
+    //生成DecorView根View的MeasureSpec
+    int childWidthMeasureSpec = getRootMeasureSpec(mWidth, lp.width);
+    int childHeightMeasureSpec = getRootMeasureSpec(mHeight, lp.height);
+
+然后执行DecorView的measure()方法开始整个View树的测量。measure()方法是被final修饰了的，派生类都不能重写，所有View都会执行到View类的measure()方法。
+
+    public final void measure(int widthMeasureSpec, int heightMeasureSpec) {
+        onMeasure(widthMeasureSpec, heightMeasureSpec);
+    }
+onMeasure()方法意在二种:
+相对于ViewGroup来说
+1.onMeasure()方法中遍历所有子View，通过执行measureChildWithMargins()方法，先计算出子View的MeasureSpec再调用子View的measure()方法传递执行measure流程。
+2.ViewGroup在所有子View的measure流程都执行结束后，再调用setMeasuredDimension()方法给自己的mMeasureWidth/Height赋值。
+
+单一View直接
+    
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+            setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
+    }
+
+
+MeasureSpec
+
+父View在帮助计算子View的MeasureSpec时有着固定的套路:
+受父View的MeasureSpec影响
+受子View自身的LayoutParams影响
+计算父View剩下可用的区域，减去父View的padding和子View的margin距离和父View已经使用(预定)的区域大小。   
+
+
+### Layout
+Layout流程通过4个点来确定子View在父View中的位置。同时也可以通过点的距离来计算出View的大小。
+
+    public final int getWidth() {
+        return mRight - mLeft;
+    }
+    
+    public final int getHeight() {
+        return mBottom - mTop;
+    }              
+
+![img.png](pic/img_2.png)        
+
+performLayout方法中会执行DecorView的layout()方法来开始整个View树的layout流程。而DecorView包括其他的ViewGroup都没有另外实现layout()方法，都会执行到View的layout()方法。                  
+layout()方法中会先执行setFrme()方法确定View自己在父View中的位置，接着再执行onLayout()方法来遍历所有的子View，计算出子View在自己心中的位置(4个点)后，再执行子View的layout流程。              
+不同的ViewGroup有着不同的方式来安排子View在自己心中的位置。 所以View类中的onLayout()是一个空方法，等着View们自己去实现。
+自定义ViewGroup的时候如果不在onLayout方法中安排子View的位置，将看不见子View。
+
+laout流程，相对于ViewGroup而言:
+1.确定自己在父View中的位置
+2.遍历所有子View，计算出在自己心中的位置(4个点)后，再执行子View的layout流程      
+
+相对于View(单个View)而言只干第一件事。
+### draw 
+performDraw()方法中通过层层调用会执行到View的draw()方法。
+    
+    private void performDraw() {
+        draw(fullRedrawNeeded);
+    }
+    private void draw(boolean fullRedrawNeeded) {
+        if (!drawSoftware(surface, mAttachInfo, xOffset, yOffset, scalingRequired, dirty)) {
+        return;
+        }
+    }
+    private boolean drawSoftware(Surface surface, AttachInfo attachInfo, int xoff, int yoff,boolean scalingRequired, Rect dirty) {
+        mView.draw(canvas);
+    }
+    public void draw(Canvas canvas) {
+        //绘制自己的背景
+        drawBackground(canvas);
+        //空实现，绘制自己的内容，自定义时重写该方法
+        onDraw(canvas)
+        //绘制子View
+        dispatchDraw(canvas);
+        //绘制前景
+        onDrawForeground(canvas);
+    }
+
+
+
+## 事件分发过程
+
+# Hanlder
+
+## 作用:切换线程
+
+主线程只能更新UI ，主线程不能做耗时操作
+why:
+
+问题：onCreate中可以拿到View的宽高吗
 
 
 
