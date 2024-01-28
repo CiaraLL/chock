@@ -465,7 +465,35 @@ onViewCreated在onActivityCreated之前
 因此适用于那些数据相对静态的页，Fragment数量也比较少的那种；                          
 FragmentStatePagerAdapter只保留当前页面，当页面不可见时，该Fragment就会被消除，释放其资源。因此适用于那些数据动态性较大、占用内存较多，多Fragment的情况；
 
+## Fragment懒加载
+Fragment懒加载，则是在Fragment可见时，立即触发生命周期方法和数据加载操作。
+- 重写setUserVisibleHint()
+ViewPager+Fragment实现有预加载机制
+- viewpager每次切换fragment的时候， 会重新创建当前界面及左右界面三个界面， 每次切换都要重新oncreate, 只要设置viewPager.setOffscreenPageLimit即可避免这个问题。
+- 默认不设置数量的情况下预加载下一页。设置0和1是同样的效果。如果ViewPager设置了setOffscreenPageLimit(2)，表示除了当前页面外，还会预加载当前页面的前后两个页面。
+- 假设有三个Fragment，分别是A、B、C。初始状态下，ViewPager会预加载A和B两个页面。当用户滑动到B页面时，ViewPager会预加载C页面，当用户滑动到C页面时，ViewPager不再进行预加载。
+- viewPager.setOffscreenPageLimit(3);表示三个界面之间来回切换都不会重新加载
+在预加载机制上 实现懒加载
+  两种方案：在ViewPager的Adapter中有深刻体现
+
+老一套的懒加载 
+优点：不用去控制 FragmentManager的 add+show+hide 方法，所有的懒加载都是在Fragment 内部控制，也就是控制 setUserVisibleHint + onHiddenChanged 这两个函数。 
+缺点：实际不可见的 Fragment，其 onResume 方法任然会被调用，这种反常规的逻辑，无法容忍。
+
+新一套的懒加载（Androidx下setMaxLifecycle） 
+优点：在非特殊的情况下(缺点1)，只有实际的可见 Fragment，其 onResume 方法才会被调用，这样才符合方法设计的初衷。 
+缺点：对于 Fragment 的嵌套，及时使用了 setMaxLifecycle 方法。同级不可见的Fragment， 仍然要调用 onResume 方法。需要在原有的 add+show+hide 方法中，继续调用 setMaxLifecycle 方法来控制Fragment 的最大生命状态。
+
+## ViewPager
+ViewPager2和viewPager
+ViewPager2是RecyclerView那一套
+ViewPager2默认是懒加载的，ViewPager默认是预加载的(左右各1个)
+为什么ViewPager设置宽度、高度无效？ 
+在OnMeasure()中，先立刻执行了setMeasuredDimension(getDefaultSize(0, widthMeasureSpec),getDefaultSize(0, heightMeasureSpec)); 并没有测量完所有的孩子后根据孩子的大小设置自己的。 
+可见，ViewPager的宽高是由它的容器决定的。 官方注释这么做的原因：我们依靠容器来指定视图的布局大小。我们无法真正知道它是什么，因为我们将添加和删除不同的任意视图并且不希望布局在这种情况下发生变化。
+
 # View整体机制
+
 ![img.png](pic/app启动到view绘制.png)
 
 ## 绘制流程起点
@@ -531,24 +559,29 @@ doTraversal这个函数被封装成了一个runnable异步消息,屏障解除和
         }
     }
 
-APP的ApplicationThread在收到scheduleLaunchActivity请求后，通过 handler 向主线程发送LAUNCH ACTIVITY 消息        
-主线程收到 message后,执行handleLaunchActivity()->performLaunchActivity()->callActivityOnCreate()->Activity.onCreate()    
+APP的ApplicationThread在收到scheduleLaunchActivity请求后，通过 handler 向主线程发送LAUNCH ACTIVITY
+消息        
+主线程收到 message后,执行handleLaunchActivity()->performLaunchActivity()->callActivityOnCreate()->
+Activity.onCreate()    
 在performLaunchActivity方法中
-1.通过类加载器创建Activity的实例对象 
-2.调用attach方法来关联运行过程中所依赖的一系列上下文环境变量 
+1.通过类加载器创建Activity的实例对象
+2.调用attach方法来关联运行过程中所依赖的一系列上下文环境变量
 
-在attach方法中 
+在attach方法中
 创建Activity所属的Window对象并为其设置回调接口,
 decorView显示过程：
-Activity的setContentView中 调用 PhoneWindowde的setContentView方法 完成了DecorView的创建和初始化， Activity的布局文件也成功添加到DecorView中
+Activity的setContentView中 调用 PhoneWindowde的setContentView方法 完成了DecorView的创建和初始化，
+Activity的布局文件也成功添加到DecorView中
 
-ActivityThread的handleResumeActivity方法会调用Activity的onResume方法 
+ActivityThread的handleResumeActivity方法会调用Activity的onResume方法
 onResume方法中会调用Activity的makeVisible方法让DecorView真正完成添加和显示过程
 makeVisible方法中WindowManager的addView()方法将Activity的根View(DecorView)添加上去，进而开始绘制流程
 
-handleResumeActivity()方法，在方法中先调用Activity.onResume()方法，再执行WindowManager的addView()方法将Activity的根View(DecorView)添加上去，进而开始绘制流程。
+handleResumeActivity()方法，在方法中先调用Activity.onResume()方法，再执行WindowManager的addView()
+方法将Activity的根View(DecorView)添加上去，进而开始绘制流程。
 
 ## 绘制过程
+
 绘制流程是由最外层的View开始，一步一步向内传递执行。而整个过程又是递归等待的，最外层的View需要等内层所有的View执行完绘制流程才结束
 从performTraversals开始
 
@@ -564,39 +597,44 @@ handleResumeActivity()方法，在方法中先调用Activity.onResume()方法，
     
         performDraw();
     }
+
 ### Measure
+
 measure流程开始执行之前，会先计算出DecorView的MeasureSpec。如果是match_parent就是屏幕的宽高
 
     //生成DecorView根View的MeasureSpec
     int childWidthMeasureSpec = getRootMeasureSpec(mWidth, lp.width);
     int childHeightMeasureSpec = getRootMeasureSpec(mHeight, lp.height);
 
-然后执行DecorView的measure()方法开始整个View树的测量。measure()方法是被final修饰了的，派生类都不能重写，所有View都会执行到View类的measure()方法。
+然后执行DecorView的measure()方法开始整个View树的测量。measure()
+方法是被final修饰了的，派生类都不能重写，所有View都会执行到View类的measure()方法。
 
     public final void measure(int widthMeasureSpec, int heightMeasureSpec) {
         onMeasure(widthMeasureSpec, heightMeasureSpec);
     }
+
 onMeasure()方法意在二种:
 相对于ViewGroup来说
-1.onMeasure()方法中遍历所有子View，通过执行measureChildWithMargins()方法，先计算出子View的MeasureSpec再调用子View的measure()方法传递执行measure流程。
-2.ViewGroup在所有子View的measure流程都执行结束后，再调用setMeasuredDimension()方法给自己的mMeasureWidth/Height赋值。
+1.onMeasure()方法中遍历所有子View，通过执行measureChildWithMargins()
+方法，先计算出子View的MeasureSpec再调用子View的measure()方法传递执行measure流程。
+2.ViewGroup在所有子View的measure流程都执行结束后，再调用setMeasuredDimension()
+方法给自己的mMeasureWidth/Height赋值。
 
 单一View直接
-    
+
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
             setMeasuredDimension(getDefaultSize(getSuggestedMinimumWidth(), widthMeasureSpec),getDefaultSize(getSuggestedMinimumHeight(), heightMeasureSpec));
     }
-
 
 MeasureSpec
 
 父View在帮助计算子View的MeasureSpec时有着固定的套路:
 受父View的MeasureSpec影响
 受子View自身的LayoutParams影响
-计算父View剩下可用的区域，减去父View的padding和子View的margin距离和父View已经使用(预定)的区域大小。   
-
+计算父View剩下可用的区域，减去父View的padding和子View的margin距离和父View已经使用(预定)的区域大小。
 
 ### Layout
+
 Layout流程通过4个点来确定子View在父View中的位置。同时也可以通过点的距离来计算出View的大小。
 
     public final int getWidth() {
@@ -607,21 +645,27 @@ Layout流程通过4个点来确定子View在父View中的位置。同时也可�
         return mBottom - mTop;
     }              
 
-![img.png](pic/img_2.png)        
+![img.png](pic/img_2.png)
 
-performLayout方法中会执行DecorView的layout()方法来开始整个View树的layout流程。而DecorView包括其他的ViewGroup都没有另外实现layout()方法，都会执行到View的layout()方法。                  
-layout()方法中会先执行setFrme()方法确定View自己在父View中的位置，接着再执行onLayout()方法来遍历所有的子View，计算出子View在自己心中的位置(4个点)后，再执行子View的layout流程。              
-不同的ViewGroup有着不同的方式来安排子View在自己心中的位置。 所以View类中的onLayout()是一个空方法，等着View们自己去实现。
+performLayout方法中会执行DecorView的layout()
+方法来开始整个View树的layout流程。而DecorView包括其他的ViewGroup都没有另外实现layout()
+方法，都会执行到View的layout()方法。                  
+layout()方法中会先执行setFrme()方法确定View自己在父View中的位置，接着再执行onLayout()
+方法来遍历所有的子View，计算出子View在自己心中的位置(4个点)后，再执行子View的layout流程。              
+不同的ViewGroup有着不同的方式来安排子View在自己心中的位置。 所以View类中的onLayout()
+是一个空方法，等着View们自己去实现。
 自定义ViewGroup的时候如果不在onLayout方法中安排子View的位置，将看不见子View。
 
 laout流程，相对于ViewGroup而言:
 1.确定自己在父View中的位置
-2.遍历所有子View，计算出在自己心中的位置(4个点)后，再执行子View的layout流程      
+2.遍历所有子View，计算出在自己心中的位置(4个点)后，再执行子View的layout流程
 
 相对于View(单个View)而言只干第一件事。
-### draw 
+
+### draw
+
 performDraw()方法中通过层层调用会执行到View的draw()方法。
-    
+
     private void performDraw() {
         draw(fullRedrawNeeded);
     }
@@ -644,18 +688,627 @@ performDraw()方法中通过层层调用会执行到View的draw()方法。
         onDrawForeground(canvas);
     }
 
-
-
 ## 事件分发过程
+
+当屏幕被触摸，首先会通过硬件产生触摸事件传入内核，然后走到viewRootImpl的setView
+方法，在requestLayout时机之后,监听inputManager
+当事件到来就 调用到processPointerEvent方法，在其中调用了mView(decorView).dispatchPointerEvent(event)
+;就传递给decorView
+再传给ViewGroup的dispatchTouchEvent，在这个方法中
+一个完整的事件序列是以 DOWN 开始，以 UP 结束的。所以，如果是 DOWN 事件，说明这是一个新的事件序列，故而需要初始化之前的状态。
+当前 ViewGroup 是否拦截了此事件，如果拦截了，mFirstTouchTarget == null，如果没有拦截则交给子 View
+来处理，mFirstTouchTarget != null。
+进行mFirstTouchTarget的传递，
+FLAG_DISALLOW_INTERCEPT 标志位，它主要是禁止 ViewGroup 拦截除了 DOWN 之外的事件，一般通过子
+View.requestDisallowInterceptTouchEvent(...) 来设置。
+
+    ViewRootImpl.setView (){
+        synchronized (this) {
+            if (mView == null) {
+                mAttachInfo.mDisplayState = mDisplay.getState();
+                ......
+                requestLayout();
+                ....... 
+                //事件传递
+                InputStage earlyPostImeStage = new EarlyPostImeInputStage(nativePostImeStage);
+            }
+        }
+    }
+        
+      final class ViewPostImeInputStage extends InputStage {
+        public ViewPostImeInputStage(InputStage next) {
+            super(next);
+        }
+
+        @Override
+        protected int onProcess(QueuedInputEvent q) {
+            if (q.mEvent instanceof KeyEvent) {
+                return processKeyEvent(q);
+            } else {
+                final int source = q.mEvent.getSource();
+                if ((source & InputDevice.SOURCE_CLASS_POINTER) != 0) {
+                    //关键方法
+                    return processPointerEvent(q);
+                } else if ((source & InputDevice.SOURCE_CLASS_TRACKBALL) != 0) {
+                    return processTrackballEvent(q);
+                } else {
+                    return processGenericMotionEvent(q);
+                }
+            }
+        }
+
+        private int processPointerEvent(QueuedInputEvent q) {
+            final MotionEvent event = (MotionEvent)q.mEvent;
+            mHandwritingInitiator.onTouchEvent(event);
+
+            mAttachInfo.mUnbufferedDispatchRequested = false;
+            mAttachInfo.mHandlingPointerEvent = true;
+            //关键方法，mView就是decorView
+            boolean handled = mView.dispatchPointerEvent(event);
+            maybeUpdatePointerIcon(event);
+            maybeUpdateTooltip(event);
+            mAttachInfo.mHandlingPointerEvent = false;
+            if (mAttachInfo.mUnbufferedDispatchRequested && !mUnbufferedInputDispatch) {
+                mUnbufferedInputDispatch = true;
+                if (mConsumeBatchedInputScheduled) {
+                    scheduleConsumeBatchedInputImmediately();
+                }
+            }
+            return handled ? FINISH_HANDLED : FORWARD;
+        }
+    }
+
+        
+    @UnsupportedAppUsage
+    public final boolean dispatchPointerEvent(MotionEvent event) {
+        if (event.isTouchEvent()) {
+            //关键代码
+            return dispatchTouchEvent(event); 
+        } else {
+        return dispatchGenericMotionEvent(event);
+        }
+    }
+    
+    // /frameworks/base/core/java/android/view/ViewGroup.java
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+    ...
+         if (onFilterTouchEventForSecurity(ev)) {
+             ...
+             // Handle an initial down.
+            //首先会判断事件是否是为 ACTION_DOWN 事件，如果是，则进行初始化
+            //因为一个完整的事件序列是以 DOWN 开始，以 UP 结束的。所以，如果是 DOWN 事件，说明这是一个新的事件序列，故而需要初始化之前的状态
+
+             if (actionMasked == MotionEvent.ACTION_DOWN) {
+                 cancelAndClearTouchTargets(ev);
+                 resetTouchState();
+             }
+    
+             // Check for interception.
+             final boolean intercepted;
+
+            //mFirstTouchTarget 的意义是，当前 ViewGroup 是否拦截了此事件
+            //如果拦截了，mFirstTouchTarget == null，如果没有拦截则交给子 View 来处理，mFirstTouchTarget != null。
+
+             if (actionMasked == MotionEvent.ACTION_DOWN|| mFirstTouchTarget != null) { 
+                 final boolean disallowIntercept = (mGroupFlags & FLAG_DISALLOW_INTERCEPT) != 0; // 2
+                 if (!disallowIntercept) {
+                     intercepted = onInterceptTouchEvent(ev);
+                     ev.setAction(action); // restore action in case it was changed
+                 } else {
+                     intercepted = false;
+                 }
+             } else {
+                 // There are no touch targets and this action is not an initial down
+                 // so this view group continues to intercept touches.
+                 intercepted = true;
+             }
+             ...
+         }
+         ...
+         return handled;
+    }
+
+方法，而 ViewRootImpl.processPointerEvent(...) 方法中的mView就是DecorView。
+InputStage earlyPostImeStage = new EarlyPostImeInputStage(nativePostImeStage);
+
+## ConstraintLayout,LinearLayout,FrameLayout,RelativeLayout
+
+1. ConstraintLayout:约束布局，通过设置视图之间的约束关系来确定它们的位置。
+   它可以在水平和垂直方向上进行约束，以实现复杂的界面布局。适用于创建适应不同屏幕尺寸的响应式布局。
+
+2. LinearLayout:线性布局，它将视图按照水平或垂直方向进行排列。 它可以通过设置权重来控制视图的大小比例。
+   适用于简单的界面布局。 在嵌套使用多个LinearLayout时，可能会出现性能问题。
+   绘制的时候只需要按照指定的方向绘制，绘制效率比Fragment要慢
+
+3. FrameLayout:帧布局，它通过一个个层叠的视图来构建界面。
+   它每次只显示一个视图，后面的视图会覆盖前面的视图。适用于单个视图或需要覆盖的情况，例如对话框、按钮点击效果等。
+   布局比较简单，不支持复杂的界面布局。
+   绘制速度最快，只需要将本身绘制出来即可，但是由于它的绘制方式导致在复杂场景中直接是不能使用的
+
+4. RelativeLayout:相对布局，它通过相对于其他视图的位置来确定视图的位置。可以通过位置关系和边距来控制视图的相对位置。
+   适合于视图之间有复杂相互关系的布局，例如标题栏、表单等。 当视图层级较多时，RelativeLayout的性能可能会受到影响。
+   每个个子控件都是需要相对的其他控件来计算，按照View树的绘制流程、在不同的分支上要进行计算相对应的位置，绘制效率最低
+
+综上所述：
+ConstraintLayout是Android中功能最强大、灵活性最高的布局，适用于复杂的界面布局；
+LinearLayout适合简单的线性布局；
+FrameLayout适合覆盖或单个视图的布局；
+RelativeLayout适合视图间有复杂相互关系的布局。选
+择布局类型时需要根据具体的界面需求和性能要求来进行选择。
+
+## Android动画
+
+### 类型分类
+
+1. 逐帧动画(Frame Animation)，即顺序播放事先准备的图片。
+
+2. 补间动画(Tween Animation)，View的动画效果可以实现简单的平移、缩放、旋转。支持view动画，不支持非View动画
+
+    // 旋转动画
+    RotateAnimation animRotate = new RotateAnimation(0, 360,Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+    animRotate.setDuration(1000);// 动画时间
+    animRotate.setFillAfter(true);// 保持动画结束状态
+
+    // 缩放动画
+    ScaleAnimation animScale = new ScaleAnimation(0, 1, 0, 1,Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,0.5f);
+    animScale.setDuration(1000);
+    animScale.setFillAfter(true);// 保持动画结束状态
+    
+    
+    // 渐变动画
+    AlphaAnimation animAlpha = new AlphaAnimation(0, 1);
+    animAlpha.setDuration(2000);// 动画时间
+    animAlpha.setFillAfter(true);// 保持动画结束状态
+    
+    
+    // 动画集合
+    AnimationSet set = new AnimationSet(true);
+    set.addAnimation(animRotate);
+    set.addAnimation(animScale);
+    set.addAnimation(animAlpha);
+    
+    // 启动动画
+    rlRoot.startAnimation(set);
+
+3. 属性动画(Property Animation)
+   ，补间动画增强版，支持任意Java对象执行动画，不再局限于视图View对象,可自定义各种动画效果，不再局限于4种基本变换：平移、旋转、缩放 &
+   透明度。
+   1.XML方式：
+
+        <?xml version="1.0" encoding="utf-8"?> 
+        <set xmlns:android="http://schemas.android.com/apk/res/android"> 
+            <animator 
+            android:valueFrom="0" 
+            android:valueTo="100" 
+            android:valueType="intType" 
+            android:duration="3000" 
+            android:startOffset ="1000" 
+            android:fillBefore = "true" 
+            android:fillAfter = "false" 
+            android:fillEnabled= "true" 
+            android:repeatMode= "restart" 
+            android:repeatCount = "0" 
+            android:interpolator="@android:anim/accelerate_interpolator"/> 
+        </set>   
+
+使用：
+
+    Button b3 = (Button) findViewById(R.id.b3); 
+    Animator mAnim = AnimatorInflater.loadAnimator(this, R.animator.animator_1_0);
+    mAnim.setTarget(b3);
+    mAnim.start();
+
+2.Java代码实现
+
+    public static ObjectAnimator setObjectAnimator(View view , String type , int start , int end , long time){ 
+        ObjectAnimator mAnimator = ObjectAnimator.ofFloat(view, type, start, end); 
+     
+        // 设置动画重复播放次数 = 重放次数+1 
+        // 动画播放次数 = infinite时,动画无限重复 
+        mAnimator.setRepeatCount(ValueAnimator.INFINITE); 
+        // 设置动画运行的时长 
+        mAnimator.setDuration(time); 
+        // 设置动画延迟播放时间 
+        mAnimator.setStartDelay(0); 
+        // 设置重复播放动画模式 
+        mAnimator.setRepeatMode(ValueAnimator.RESTART); 
+        // ValueAnimator.RESTART(默认):正序重放 
+        // ValueAnimator.REVERSE:倒序回放 
+        //设置差值器 
+        mAnimator.setInterpolator(new LinearInterpolator()); 
+        return mAnimator; 
+    }
+
+ValueAnimator:先改变值，然后手动赋值 给对象的属性从而实现动画；是间接对对象属性进行操作；
+ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现动画；是直接对对象属性进行操作；
+
+    //不同的定义方式
+    ValueAnimator animator = null;
+
+    if (isOpen) {
+    //要关闭
+        if (longHeight > shortHeight) {
+            isOpen = false;
+            animator = ValueAnimator.ofInt(longHeight, shortHeight);
+        }
+    } else {
+        //要打开
+        if (longHeight > shortHeight) {
+            isOpen = true;
+            animator = ValueAnimator.ofInt(shortHeight, longHeight);
+        }
+    }
+        
+    animator.start();
+
+
+    //不同的定义方式
+    ObjectAnimator animatorX = ObjectAnimator.ofFloat(mSplashImage, "scaleX", 1f, 2f);  
+    animatorX.start();
+
+组合：
+常用的组合方法
+• AnimatorSet.play(Animator anim) ：播放当前动画。
+• AnimatorSet.after(long delay) ：将现有动画延迟x毫秒后执行。
+• AnimatorSet.with(Animator anim) ：将现有动画和传入的动画同时执行。
+• AnimatorSet.after(Animator anim) ：将现有动画插入到传入的动画之后执行。
+• AnimatorSet.before(Animator anim) ：将现有动画插入到传入的动画之前执行。
+
+    ObjectAnimator translation = ObjectAnimator.ofFloat(mButton, "translationX", curTranslationX, 300,curTranslationX);  // 平移动画 
+    ObjectAnimator rotate = ObjectAnimator.ofFloat(mButton, "rotation", 0f, 360f);  // 旋转动画
+    ObjectAnimator alpha = ObjectAnimator.ofFloat(mButton, "alpha", 1f, 0f, 1f);  // 透明度动画 // 创建组合动画的对象
+    AnimatorSet animSet = new AnimatorSet();  // 根据需求组合动画
+    animSet.play(translation).with(rotate).before(alpha);  
+    animSet.setDuration(5000);  //启动动画
+    animSet.start();
+
+4. 过渡动画(Transition Animation),实现Activity或View过渡动画效果。包括5.0之后的MD过渡动画等。
+   5.0之后，Android就自带几种动画特效。3种转场动画 ，1种共享元素。
+
+三种转场动画如下：
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void explode(View view) {
+    intent = new Intent(this, TransitionActivity.class);
+        intent.putExtra("flag", 0);
+        startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+    } 
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void slide(View view) {
+    intent = new Intent(this, TransitionActivity.class);
+        intent.putExtra("flag", 1);
+        startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+    }
+    
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void fade(View view) {
+    intent = new Intent(this, TransitionActivity.class);
+        intent.putExtra("flag", 2);
+        startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
+    }
+
+5.0的Share共享动画：
+
+跳转的方法
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    public void share(View view) {
+        View fab = findViewById(R.id.fab_button);
+        intent = new Intent(this, TransitionActivity.class);
+        intent.putExtra("flag", 3);
+ 
+        //创建单个共享
+    //        startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this, view, "share")
+    //                .toBundle());
+
+        //创建多个共享
+        startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this, Pair.create(view, "share"),Pair.create(fab,"fab"))
+                .toBundle());
+    }
+
+share的方式，不需要对方页面接收设置过渡动画，而是需要在xml中配置transitionName属性：
+
+    <View
+    android:background="?android:colorPrimary"
+    android:id="@+id/holder_view"
+    android:transitionName="share"
+    android:layout_width="match_parent"
+    android:layout_height="300dp"/>
 
 # Hanlder
 
-## 作用:切换线程
+## Hanlder说明
 
 主线程只能更新UI ，主线程不能做耗时操作
 why:
-
+从requestLayout后到vSync信号到达的这段时间内，如果在主线程执行其他任务，会导致刷新不及时.
 问题：onCreate中可以拿到View的宽高吗
+不能 但是可以添加异步任务，view.post;
 
 
+# SP&&MMKV
+
+![img.png](pic/img_spmmkv.png)
+
+## sp
+
+1. 使用键值对的方式进行xml文件存储，通常用于：保存用户的偏好设置、选择是否保存密码、记录文档阅读的位置等
+2. 目录data/data/share_prefs下，应用的私有目录
+3. 直接使用 I/O
+   流进行文件的读写，弊端：不能存储大量数据；每次写入或修改都需要替换掉原来的数据，并将所有数据重新写入文件整个，整个xml⽂件全部加载进内存，如果一个sp文件的内容过多，那么再写入的时候会造成卡顿，甚至会有
+   ANR 的风险
+4. 只⽀持 Java 基本数据类型 & String 类型数据存储 ，如果要⽤ SharedPreferences
+   存取复杂的数据类型（类，图像等）就需要对这些数据进⾏编码。
+5. 通过
+
+       Context.getSharedPreferences()
+       或PreferenceManager.getDefaultSharedPreferences()方法
+       获取一个SharedPreferences对象  
+
+然后通过 调用其edit()方法获取
+
+    SharedPreferences.Editor对象  
+
+使用两种方式保存数据
+
+    mSPrefs.edit().putBoolean(key, value).commit();
+    mSPrefs.edit().putBoolean(key, value).apply();
+
+apply:
+
+-
+同步提交数据到内存，并异步写入磁盘。不会返回提交结果，也不会抛出异常。适合在不需要关心提交结果的情况下使用，效率更高。         
+commit:
+- 同步提交数据，即将数据提交到内存，并同步写入磁盘。,返回提交结果，成功返回true，失败返回false,保证数据写入的顺序，且所有数据都会写入磁盘,适合需要确保数据写入完成并获取提交结果的情况。
+
+总结：     
+通常情况下，推荐使用apply()方法来保存数据，因为它是异步的，不会造成阻塞，对性能影响较小。       
+只有在确实需要同步提交并关心提交结果的情况下，才使用commit()方法。
+
+读：SharedPreferences 读取数据都使⽤awaitLoadedLocked 同步锁，是线程安全的。
+写：对于提交到内存和磁盘写入操作都广泛使用了synchronized关键字来保证其线程安全。
+
+6. 不支持跨进程，也就是说非进程安全的。context不是同一个。
+   如何解决:     
+   1.使用文件锁，保证只有一个进程访问xml文件       
+   2.使用ContentProvider结合SP，保证SP的进程安全
+
+-
+
+## mmkv
+
+1. 高性能：MMKV基于mmap的内存映射方式，实现了高速的键值存储，提供一段可供随时写入的内存块，App只管往里面写数据，由操作系统负责将内存回写到文件，不必担心crash导致数据丢失。。
+2. 使用了 append-only 文件写入策略。
+   不需要进行数据的修改和移动，，按照写入的顺序追加到现有数据的末尾，不用重新生成整个文件。这样可以避免文件的突然增大，同时也允许更灵活的空间管理。
+   不断 append 的话，文件大小会增长得不可控。需要定期进行内存重整，以释放不再使用的空间并确保文件大小可控。以空间换性能。
+3. 数据序列化使用 protobuf 协议，
+
+   Protobuf（Protocol Buffers）是一种由Google开发的二进制数据序列化协议，用于结构化数据的传输和存储。
+   Protobuf 定义了一种描述数据结构的语言（IDL，Interface Description Language），
+   通过编写.proto文件来描述数据的结构和字段。
+   然后使用 Protobuf 工具将.proto文件编译生成相应的语言代码（如Java、C++、Python等），用于在不同编程语言中操作和处理结构化的数据。
+
+   高效的编码和解码性能：使用二进制格式进行数据传输，相比于文本格式（如JSON、XML）具有更高的编码和解码速度，以及更小的传输体积。
+
+4. 缺点：相对于SharedPreferences，使用MMKV的工作量较大，需要添加额外的库，增加了复杂性
+5. 存储大量或复杂数据的场景选mmkv。
+6. 支持多线程读写：
+7. 使用：
+
+       //1. 设置初始化的根目录
+       String dir = getFilesDir().getAbsolutePath() + "/mmkv_2";
+       String rootDir = MMKV.initialize(dir);
+       Log.i("MMKV", "mmkv root: " + rootDir);
+
+        // 2. 获取默认的全局实例
+        MMKV kv = MMKV.defaultMMKV();
+        
+        // 根据业务区别存储, 附带一个自己的 ID
+        MMKV kv = MMKV.mmkvWithID("MyID");
+        
+        // 多进程同步支持
+        MMKV kv = MMKV.mmkvWithID("MyID", MMKV.MULTI_PROCESS_MODE);
+
+总结：
+SharedPreferences适用于存储简单的配置信息或用户偏好设置，适合存储少量的数据，而MMKV适用于性能要求较高，需要存储大量或复杂数据的场景。      
+如果应用需要频繁地读写数据、同时追求较高的性能和可靠性，可以选择使用MMKV。如果只需要存储少量的简单数据，可以使用SharedPreferences。
+
+# RecyclerView
+
+优点：
+
+1. 刷新机制：
+   notifyDataSetChanged() 刷新全部可见的item
+   notifyItemChanged(int)刷新指定item，
+   notifyItemRangChanger()从指定位置开始刷新指定个item
+
+   notifyItemInserted(int),notifyItemMoved(int),notifyItemRemoved(int)插入、移动,删除一个并自动刷新
+   notifyItemChanged(int;Object)局部刷新
+
+2. 四级缓存
+   一级缓存：scrap 是当前展示的缓存，缓存屏幕中可见范围的 ViewHolder，用于屏幕内的 itemView 的快速重用，
+   二级缓存：viewCache 默认大小为 2，缓存最近移出屏幕的 ViewHolder，包含数据和 position。复用时必须是相同位置的
+   ViewHolder 才可以复用
+
+         以上两种缓存是不走 createView和onbind。
+
+   三级缓存：mViewCacheExtension 用户自己去实现，一般默认是不实现
+   四级缓存：recyclerPool比较特殊他是会走 onBind的,支持所有 RecyclerView 公用一个 RecyclerViewPool;
+
+         实际用途是:在垂直recyclerView 内嵌水平recyclerView,或者viewpager中多个recyclerView        
+
+3. 滑动冲突
+
+1.外部拦截法
+
+主要就是重写父容器的 onInterceptTouchEvent 方法， 但是要注意，父容器拦截不能在 ACTION_DOWN 中返回
+true，不会再调用它的 onInterceptTouchEvent 函数了，之后的所有事件序列都会交给它处理，无论返回什么      
+所以父控件应该在 ACTION_MOVE 中选择是否拦截。但是这种拦截的问题是，如果拦截了，那么⼦控件的 onClick
+事件将无法再出发了。
+
+2.内部拦截法               
+指的是父容器不拦截任何事件，所有事件全部传递给⼦元素，如果⼦元素需要就进行消耗，否则交由父容器进行处理。
+这种方式需要配合 ViewGroup 的 FLAG_DISALLOW_INTERCEPT 标志位来使用,设置此标志为可以通过
+
+    requestDisallowIntercept .TouchEvent 
+
+函数来设置，如果设置了此标志位，那么 ViewGroup 就无法拦截除了 ACTION_DOWN 之外的任何事件。
+这样首先我们保证
+
+    ViewGroup.onInterceptTouchEvent 方法
+
+除了 DOWN 其他都返回 true，DOWN 返回 false， 这样保证了不会拦截 DOWN 事件，交给它的⼦ View 进 行处理；
+重写
+
+    View.dispatchTouchEvent 函数
+
+在 DOWN 中设置
+
+    parent.requestDisallowInterceptTouchEvent(true)，
+
+这样父控件在默认的情况下 DOWN 之后的所有事件它都拦截不到，交由⼦ View 来处理， View 在 MOVE
+中判断父控件需要时，调用
+
+    parent.requestDisallow InterceptTouchEvent(false)
+
+这样父控件的拦截又起作用了，相应的事件交给了父控件进行处理。
+
+# EventBus
+
+Subscribe是EventBus自定义的注解，共有三个参数（可选）：threadMode、boolean sticky、int priority。 完整的写法如下：
+
+    @Subscribe(threadMode = ThreadMode.MAIN,sticky = true,priority = 1)
+    public void onReceiveMsg(EventMessage message) {
+        Log.e(TAG, "onReceiveMsg: " + message.toString());
+    }
+
+原理:
+1、register方法将对象实例用软引用包裹，保存到一个map缓存集合中
+2、post方法 传入一个对象进去，然后遍历map里面多有的对象，找到所有的带有
+@subscribe注解的并且方法参数与post的对象是同一类型的Method。 并通过反射执行Method.
+3、Subscribe线程调度 执行method方法的时候会去获取注解上标记得线程，然后切换到指定线程。
+4、unregister取消订阅 从第一步中的缓存map中移除对应注册的对象实例
+
+ThreadMode 模式:
+ThreadMode.POSTING，默认的线程模式，在那个线程发送事件就在对应线程处理事件，避免了线程切换，效率高。
+ThreadMode.MAIN，如在主线程（UI线程）发送事件，则直接在主线程处理事件；如果在子线程发送事件，则先将事件入队列，然后通过
+Handler 切换到主线程，依次处理事件。
+ThreadMode.MAIN_ORDERED，无论在那个线程发送事件，都先将事件入队列，然后通过 Handler 切换到主线程，依次处理事件。
+ThreadMode.BACKGROUND，如果在主线程发送事件，则先将事件入队列，然后通过线程池依次处理事件；如果在子线程发送事件，则直接在发送事件的线程处理事件。
+ThreadMode.ASYNC，无论在那个线程发送事件，都将事件入队列，然后通过线程池处理。
+
+# Retrofit
+
+![img.png](pic/retrofit.png)
+
+## 注解：
+### 请求方法类
+
+1. get请求，参数可以@Query，@QueryMap
+
+        @GET("/")    
+        Call<String> cate(@Query("cate") String cate);
+        
+        // 其使用方式同 @Field与@FieldMap，这里不作过多描述
+
+2. POST请求
+@Post() 参数是body
+@POST("/form")+@FormUrlEncodedart 参数Filed，FiledMap
+@POST("/form")+@MultipPart 参数part PartMap
+    
+3. @HTTP替换@GET、@POST、@PUT、@DELETE、@HEAD注解的作用以及更多功能拓展，具体使用：通过method、path、hasBody进行设置
+
+        @HTTP(method = "GET",path = "blog/{id}",hasBody = false)
+        Call<ResponseBody> getCall(@Path("id") int id);
+
+### 标记类
+![img.png](pic/img_retrofit01.png)
+1. @FormUrlEncoded,表示请求体是一个form表单，多个参数用@Filed，传map可以@FieldMap
+
+        @POST("/form")
+        @FormUrlEncoded
+        Call<ResponseBody> testFormUrlEncoded1(@Field("username") String name, @Field("age") int age);
+
+        /**
+        * Map的key作为表单的键
+        */
+        @POST("/form")
+        @FormUrlEncoded
+        Call<ResponseBody> testFormUrlEncoded2(@FieldMap Map<String, Object> map);
+        }
+
+2. @Multipart，表示请求体是支持文件上传的一个form表单，多个参数用@Part，每个Part可以是requestBody,可以是MultipartBody
+
+        @POST("/form")
+        @Multipart
+        Call<ResponseBody> testFileUpload1(@Part("name") RequestBody name, @Part("age") RequestBody age, @Part MultipartBody.Part file);
+
+  @PartMap参数可以存RequestBody
+
+        @POST("/form")
+        @Multipart
+        Call<ResponseBody> testFileUpload2(@PartMap Map<String, RequestBody> args, @Part MultipartBody.Part file);
+
+3. @Streaming
+处理返回Response的方法的响应体，即没有将body（）转换为byte []
+
+### 参数类
+1. @Header 在参数里面可以用，写在外面@Headers
+
+        // @Header   不固定请求头，作用于参数
+        @GET("user")
+        Call<User> getUser(@Header("Authorization") String authorization)
+        
+        // @Headers   固定请求头，作用于方法
+        @Headers("Authorization: authorization")
+        @GET("user")
+        Call<User> getUser()
+
+2. @URL 直接传入一个请求的 URL变量 用于URL设置
+3. @Path URL地址的缺省值
+4. get使用的@Query，@QueryMap
+5. 单一post使用的body
+6. @POST("/form")+@FormUrlEncodedart 参数Filed，FiledMap
+   @POST("/form")+@MultipPart 参数part PartMap
+
+# 原理
+Retrofit 就是一个注解形式的网络请求封装库，请求不是retrofit完成的，只是封装了请求参数，head，URL，返回结果处理，支持 RXJava进行线程切换，简化了操作，请求是 okhttp3 完成的，
+
+创建创建 Retrofit 实例 ，将网络请求接口传给 Retrofit.Create()，动态代理（生成一个代理类继承这个接口，执行代理类.newProxyInstance 产生代理对象并传三个参数（类加载器，类，
+invocationHanlder），完成这个接口的网络请求方法，调用网络请求方法的时候会调用 invocationHanlder 的 invoke 方法，所有的请求都走 invoke 函数
+此时在 invoke方法中统一处理网络请求接口实体对象的方法，invoke方法会通过方法构造一个ServiceMethod对象，并将其放入缓存中， 然后根据ServiceMethod对象和网络请求的参数去构造一个OkHttpCall对象，
+
+这个OkHttpCall对象内部通过OkHttp提供的Api来处理网络请求，为了将OkHttpCall对象适配成方法的返回类型，Retrofit提供了配置CallAdpaterFactory的Api，
+比如RxJava2CallAdapterFactory就会将OkHttpCall对象适配成一个Observable对象，并在Obserable的subscribleActual方法中调用OkHttpCall对象发起网络请求并回调Observser的onNext方法来处理网络请求返回的数据。
+Retrofit还提供了配置数据格式转换的API，可以针对不同的数据类型进行处理。
+
+Retrofit是一款能够将Java接口转换成一个能够进行网络请求对象的框架，具有使用简单，可扩展性强等优点，其内部通过动态代理模式生成接口的实体对象，并且在InvocationHandler中统一处理请求方法，通过解读方法的注解来获得接口中配置的网络请求信息，并将网络请求信息和请求参数一起封装成一个OkHttpCall对象，
+这个OkHttpCall对象内部通过OkHttp提供的Api来处理网络请求，为了将OkHttpCall对象适配成方法的返回类型，Retrofit提供了配置CallAdpaterFactory的Api，比如RxJava2CallAdapterFactory就会将OkHttpCall对象适配成一个Observable对象，并在Obserable的subscribleActual方法中调用OkHttpCall对象发起网络请求并回调Observser的onNext方法来处理网络请求返回的数据。
+Retrofit还提供了配置数据格式转换的API，可以针对不同的数据类型进行处理。
+
+反观一下Retrofit，其内部的设计结构非常清晰，通过动态代理来处理接口，通过OkHttp来处理网络请求，通过CallAdapterFactory来适配OkHttpCall，通过ConverterFactory来处理数据格式的转换，这符合面对对象设计思想的单一职责原则，
+同时，Retrofit对CallAdpaterFactory和ConverterFactory的依赖都是依赖其接口的，这就让我们可以非常方便的扩展自己的CallAdpaterFactory和ConverterFactory，这符合依赖倒置原则；
+不管Retrofit内部的实现如何复杂，比如动态代理的实现、针对注解的处理以及寻找合适的适配器等，Retrofit对开发者隐藏了这些实现细节，只提供了简单的Api给开发者调用，开发者只需要关注通过的Api即可实现网络请求，这种对外隐藏具体的实现细节的思想符合迪米特原则。
+另外，Retrofit内部大量使用了设计模式，比如构造Retrofit对象时使用了Builder模式，处理接口时是用来动态代理模式，适配OkHttpCall时使用了Adapter模式，生成CallAdpater和Converter时使用了工厂模式。
+Retrofit的设计正是因为遵循了面向对象的思想，以及对设计模式的正确应用，才使得其具备结构清晰、易Retrofit是一款能够将Java接口转换成一个能够进行网络请求对象的框架，具有使用简单，可扩展性强等优点，
+
+# MVVM
+
+viewModel出现为了解决什么问题?
+看下viewModel的优点就知道了:
+1.对于activity/fragment的销毁重建，它们内部的数据也会销毁，通常可以用onSavelnstanceState()防法保存，通过onCreate的bundle中重新获取，但是大量的数据不合适，而vm会再页面销毁时自动保存并在页面加载时恢复。
+2.对于异步获取数据，大多时候会在页面destroved时回收资源，随着数据和资源的复杂，会造成页面中的回收操作越来越多，页面处理ui的同时还要处理资源和数据的管理。而引入vm后可以把资源和数据的处理统一放在vm 里页面回收时系统也会回收vm。
+加上databinding的支持后，会大幅度分担ui层的负担。
+内部原理:
+vm内部很简单，只有一个onClean方法
+vm的创建一般是这样
+
+    ViewModelProviders.of(getActivity()).get(UserModel.cla ss);
+
+在of方法中通过传入的activity获取构造一个HolderFragment，HolderFragment内有个ViewModelStore，而ViewModelStore内部的一个hashMap保存着系统构造的vm对象，
+HolderFragment可以感知到传入页面的生命周期 (跟glide的做法差不多)HolderFragment构造方法中设置了 setRetainInstance(true)，所以页面销毁后vm可以正常保存
+2.get(UserModel.class);
+获取ViewModelStore.hashMap中的vm，第一次为空会走创建逻辑，如果我们没有提供vm创建的Factory，使用我们传入的activity获取application创建AndroidViewModelFactory，内部使用反射创建我们需要的vm对象。
 
