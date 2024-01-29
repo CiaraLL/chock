@@ -468,29 +468,29 @@ FragmentStatePagerAdapter只保留当前页面，当页面不可见时，该Frag
 ## Fragment懒加载
 Fragment懒加载，则是在Fragment可见时，立即触发生命周期方法和数据加载操作。
 - 重写setUserVisibleHint()
-ViewPager+Fragment实现有预加载机制
-- viewpager每次切换fragment的时候， 会重新创建当前界面及左右界面三个界面， 每次切换都要重新oncreate, 只要设置viewPager.setOffscreenPageLimit即可避免这个问题。
-- 默认不设置数量的情况下预加载下一页。设置0和1是同样的效果。如果ViewPager设置了setOffscreenPageLimit(2)，表示除了当前页面外，还会预加载当前页面的前后两个页面。
-- 假设有三个Fragment，分别是A、B、C。初始状态下，ViewPager会预加载A和B两个页面。当用户滑动到B页面时，ViewPager会预加载C页面，当用户滑动到C页面时，ViewPager不再进行预加载。
+ViewPager+Fragment的预加载机制,切换fragment的时候，会重新创建当前界面及左右界面三个界面，每次切换都要重新onCreate, 只要设置viewPager.setOffscreenPageLimit即可避免这个问题。            
+- 默认不设置数量的情况下预加载下一页。设置0和1是同样的效果。
+- 如果ViewPager设置了setOffscreenPageLimit(2)，表示除了当前页面外，还会预加载当前页面的前后两个页面。假设有三个Fragment，分别是A、B、C。初始状态下，ViewPager会预加载A和B两个页面。当用户滑动到B页面时，ViewPager会预加载C页面，当用户滑动到C页面时，ViewPager不再进行预加载。
 - viewPager.setOffscreenPageLimit(3);表示三个界面之间来回切换都不会重新加载
+
 在预加载机制上 实现懒加载
-  两种方案：在ViewPager的Adapter中有深刻体现
 
-老一套的懒加载 
-优点：不用去控制 FragmentManager的 add+show+hide 方法，所有的懒加载都是在Fragment 内部控制，也就是控制 setUserVisibleHint + onHiddenChanged 这两个函数。 
-缺点：实际不可见的 Fragment，其 onResume 方法任然会被调用，这种反常规的逻辑，无法容忍。
+老一套的懒加载                 
+优点：不用去控制 FragmentManager的 add+show+hide 方法，所有的懒加载都是在Fragment 内部控制，也就是控制 setUserVisibleHint + onHiddenChanged 这两个函数。                 
+缺点：实际不可见的 Fragment，其 onResume 方法任然会被调用，这种反常规的逻辑，无法容忍。                 
 
-新一套的懒加载（Androidx下setMaxLifecycle） 
-优点：在非特殊的情况下(缺点1)，只有实际的可见 Fragment，其 onResume 方法才会被调用，这样才符合方法设计的初衷。 
-缺点：对于 Fragment 的嵌套，及时使用了 setMaxLifecycle 方法。同级不可见的Fragment， 仍然要调用 onResume 方法。需要在原有的 add+show+hide 方法中，继续调用 setMaxLifecycle 方法来控制Fragment 的最大生命状态。
+新一套的懒加载（Androidx下setMaxLifecycle）            
+优点：在非特殊的情况下(缺点1)，只有实际的可见 Fragment，其 onResume 方法才会被调用，这样才符合方法设计的初衷。            
+缺点：对于 Fragment 的嵌套，及时使用了setMaxLifecycle方法。同级不可见的Fragment， 仍然要调用onResume方法。需要在原有的 add+show+hide 方法中，继续调用setMaxLifecycle方法来控制Fragment的最大生命状态。
 
-## ViewPager
-ViewPager2和viewPager
-ViewPager2是RecyclerView那一套
-ViewPager2默认是懒加载的，ViewPager默认是预加载的(左右各1个)
-为什么ViewPager设置宽度、高度无效？ 
-在OnMeasure()中，先立刻执行了setMeasuredDimension(getDefaultSize(0, widthMeasureSpec),getDefaultSize(0, heightMeasureSpec)); 并没有测量完所有的孩子后根据孩子的大小设置自己的。 
-可见，ViewPager的宽高是由它的容器决定的。 官方注释这么做的原因：我们依靠容器来指定视图的布局大小。我们无法真正知道它是什么，因为我们将添加和删除不同的任意视图并且不希望布局在这种情况下发生变化。
+## ViewPager    
+
+ViewPager2和viewPager        
+
+ViewPager2默认是懒加载的，ViewPager默认是预加载的(左右各1个)       
+为什么ViewPager设置宽度、高度无效？            
+在OnMeasure()中，先立刻执行了setMeasuredDimension(getDefaultSize(0, widthMeasureSpec),getDefaultSize(0, heightMeasureSpec)); 并没有测量完所有的孩子后根据孩子的大小设置自己的。可见，ViewPager的宽高是由它的容器决定的。           
+官方注释这么做的原因：我们依靠容器来指定视图的布局大小。我们无法真正知道它是什么，因为我们将添加和删除不同的任意视图并且不希望布局在这种情况下发生变化。            
 
 # View整体机制
 
@@ -515,7 +515,8 @@ WindowManagerGlobal以工厂的形式向外提供自己的实例，存储Window�
 WindowManagerGlobal的addView方法中通过ViewRootImpl的setView方法来更新界面并完成Window的添加过程：
 在ViewRootImpl的setView方法中又会调用requestLayout方法来完成异步刷新请求。
 
-调用requestLayout后，先加同步屏障，然后监听vsync信号，等着vsync信号到达后，把doTraversal这个函数包裹成一个异步消息加入到messageQueue      
+调用requestLayout后，先加同步屏障，然后监听vsync信号，等着vsync信号到达后，把doTraversal这个函数包裹成一个异步消息加入到messageQueue 
+
 doTraversal这个函数被封装成了一个runnable异步消息,屏障解除和3大流程开始，都是这个异步消息的执行体中做的事情
 所以这个同步屏障的作用就是，在调用requestLayout后到vsync信号到达的这段时间内，不能在主线程执行其他任何任务，保证ui显示是第一位的
 
@@ -561,24 +562,26 @@ doTraversal这个函数被封装成了一个runnable异步消息,屏障解除和
 
 APP的ApplicationThread在收到scheduleLaunchActivity请求后，通过 handler 向主线程发送LAUNCH ACTIVITY
 消息        
-主线程收到 message后,执行handleLaunchActivity()->performLaunchActivity()->callActivityOnCreate()->
-Activity.onCreate()    
-在performLaunchActivity方法中
-1.通过类加载器创建Activity的实例对象
-2.调用attach方法来关联运行过程中所依赖的一系列上下文环境变量
+主线程收到 message后,执行handleLaunchActivity()->performLaunchActivity()->callActivityOnCreate()->Activity.onCreate()             
+在performLaunchActivity方法中           
+1.通过类加载器创建Activity的实例对象          
+2.调用attach方法来关联运行过程中所依赖的一系列上下文环境变量           
 
-在attach方法中
-创建Activity所属的Window对象并为其设置回调接口,
-decorView显示过程：
-Activity的setContentView中 调用 PhoneWindowde的setContentView方法 完成了DecorView的创建和初始化，
-Activity的布局文件也成功添加到DecorView中
+在attach方法中:    
+初始化上下文           
+创建Activity所属的Window对象(phoneWindow)       
+并为window对象其设置回调接口        
+
+decorView显示过程：  
+Activity的setContentView中 调用 PhoneWindow的setContentView方法 完成了DecorView的创建和初始化， 
+Activity的布局文件也成功添加到DecorView中 
 
 ActivityThread的handleResumeActivity方法会调用Activity的onResume方法
 onResume方法中会调用Activity的makeVisible方法让DecorView真正完成添加和显示过程
-makeVisible方法中WindowManager的addView()方法将Activity的根View(DecorView)添加上去，进而开始绘制流程
+makeVisible方法中WindowManager的addView()方法将Activity的根View(DecorView)添加上去，进而开始绘制流程       
 
 handleResumeActivity()方法，在方法中先调用Activity.onResume()方法，再执行WindowManager的addView()
-方法将Activity的根View(DecorView)添加上去，进而开始绘制流程。
+方法将Activity的根View(DecorView)添加上去，进而开始绘制流程。      
 
 ## 绘制过程
 
@@ -656,11 +659,11 @@ layout()方法中会先执行setFrme()方法确定View自己在父View中的位�
 是一个空方法，等着View们自己去实现。
 自定义ViewGroup的时候如果不在onLayout方法中安排子View的位置，将看不见子View。
 
-laout流程，相对于ViewGroup而言:
-1.确定自己在父View中的位置
-2.遍历所有子View，计算出在自己心中的位置(4个点)后，再执行子View的layout流程
+laout流程，相对于ViewGroup而言:           
+1.确定自己在父View中的位置             
+2.遍历所有子View，计算出在自己心中的位置(4个点)后，再执行子View的layout流程         
 
-相对于View(单个View)而言只干第一件事。
+相对于View(单个View)而言只干第一件事。        
 
 ### draw
 
@@ -845,35 +848,32 @@ RelativeLayout适合视图间有复杂相互关系的布局。选
 
 2. 补间动画(Tween Animation)，View的动画效果可以实现简单的平移、缩放、旋转。支持view动画，不支持非View动画
 
-    // 旋转动画
-    RotateAnimation animRotate = new RotateAnimation(0, 360,Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-    animRotate.setDuration(1000);// 动画时间
-    animRotate.setFillAfter(true);// 保持动画结束状态
+        // 旋转动画
+        RotateAnimation animRotate = new RotateAnimation(0, 360,Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        animRotate.setDuration(1000);// 动画时间
+        animRotate.setFillAfter(true);// 保持动画结束状态
+    
+        // 缩放动画
+        ScaleAnimation animScale = new ScaleAnimation(0, 1, 0, 1,Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,0.5f);
+        animScale.setDuration(1000);
+        animScale.setFillAfter(true);// 保持动画结束状态
 
-    // 缩放动画
-    ScaleAnimation animScale = new ScaleAnimation(0, 1, 0, 1,Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF,0.5f);
-    animScale.setDuration(1000);
-    animScale.setFillAfter(true);// 保持动画结束状态
-    
-    
-    // 渐变动画
-    AlphaAnimation animAlpha = new AlphaAnimation(0, 1);
-    animAlpha.setDuration(2000);// 动画时间
-    animAlpha.setFillAfter(true);// 保持动画结束状态
-    
-    
-    // 动画集合
-    AnimationSet set = new AnimationSet(true);
-    set.addAnimation(animRotate);
-    set.addAnimation(animScale);
-    set.addAnimation(animAlpha);
-    
-    // 启动动画
-    rlRoot.startAnimation(set);
+        // 渐变动画
+        AlphaAnimation animAlpha = new AlphaAnimation(0, 1);
+        animAlpha.setDuration(2000);// 动画时间
+        animAlpha.setFillAfter(true);// 保持动画结束状态
+
+        // 动画集合
+        AnimationSet set = new AnimationSet(true);
+        set.addAnimation(animRotate);
+        set.addAnimation(animScale);
+        set.addAnimation(animAlpha);
+        
+        // 启动动画
+        rlRoot.startAnimation(set);
 
 3. 属性动画(Property Animation)
-   ，补间动画增强版，支持任意Java对象执行动画，不再局限于视图View对象,可自定义各种动画效果，不再局限于4种基本变换：平移、旋转、缩放 &
-   透明度。
+   补间动画增强版，支持任意Java对象执行动画，不再局限于视图View对象,可自定义各种动画效果，不再局限于4种基本变换：平移、旋转、缩放 & 透明度。                     
    1.XML方式：
 
         <?xml version="1.0" encoding="utf-8"?> 
@@ -899,7 +899,7 @@ RelativeLayout适合视图间有复杂相互关系的布局。选
     mAnim.setTarget(b3);
     mAnim.start();
 
-2.Java代码实现
+  2.Java代码实现
 
     public static ObjectAnimator setObjectAnimator(View view , String type , int start , int end , long time){ 
         ObjectAnimator mAnimator = ObjectAnimator.ofFloat(view, type, start, end); 
@@ -919,9 +919,8 @@ RelativeLayout适合视图间有复杂相互关系的布局。选
         mAnimator.setInterpolator(new LinearInterpolator()); 
         return mAnimator; 
     }
-
-ValueAnimator:先改变值，然后手动赋值 给对象的属性从而实现动画；是间接对对象属性进行操作；
-ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现动画；是直接对对象属性进行操作；
+ValueAnimator:先改变值，然后手动赋值 给对象的属性从而实现动画；是间接对对象属性进行操作；            
+ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现动画；是直接对对象属性进行操作；            
 
     //不同的定义方式
     ValueAnimator animator = null;
@@ -946,14 +945,13 @@ ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现�
     //不同的定义方式
     ObjectAnimator animatorX = ObjectAnimator.ofFloat(mSplashImage, "scaleX", 1f, 2f);  
     animatorX.start();
-
-组合：
-常用的组合方法
-• AnimatorSet.play(Animator anim) ：播放当前动画。
-• AnimatorSet.after(long delay) ：将现有动画延迟x毫秒后执行。
-• AnimatorSet.with(Animator anim) ：将现有动画和传入的动画同时执行。
-• AnimatorSet.after(Animator anim) ：将现有动画插入到传入的动画之后执行。
-• AnimatorSet.before(Animator anim) ：将现有动画插入到传入的动画之前执行。
+组合：        
+常用的组合方法            
+• AnimatorSet.play(Animator anim) ：播放当前动画。         
+• AnimatorSet.after(long delay) ：将现有动画延迟x毫秒后执行。            
+• AnimatorSet.with(Animator anim) ：将现有动画和传入的动画同时执行。             
+• AnimatorSet.after(Animator anim) ：将现有动画插入到传入的动画之后执行。          
+• AnimatorSet.before(Animator anim) ：将现有动画插入到传入的动画之前执行。           
 
     ObjectAnimator translation = ObjectAnimator.ofFloat(mButton, "translationX", curTranslationX, 300,curTranslationX);  // 平移动画 
     ObjectAnimator rotate = ObjectAnimator.ofFloat(mButton, "rotation", 0f, 360f);  // 旋转动画
@@ -962,11 +960,11 @@ ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现�
     animSet.play(translation).with(rotate).before(alpha);  
     animSet.setDuration(5000);  //启动动画
     animSet.start();
-
+  
 4. 过渡动画(Transition Animation),实现Activity或View过渡动画效果。包括5.0之后的MD过渡动画等。
    5.0之后，Android就自带几种动画特效。3种转场动画 ，1种共享元素。
 
-三种转场动画如下：
+  三种转场动画如下：
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void explode(View view) {
@@ -989,9 +987,9 @@ ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现�
         startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this).toBundle());
     }
 
-5.0的Share共享动画：
+  5.0的Share共享动画：
 
-跳转的方法
+  跳转的方法
 
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
     public void share(View view) {
@@ -1000,15 +998,15 @@ ObjectAnimator:先改变值，然后自动赋值 给对象的属性从而实现�
         intent.putExtra("flag", 3);
  
         //创建单个共享
-    //        startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this, view, "share")
-    //                .toBundle());
+        //startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this, view, "share")
+        //.toBundle());
 
         //创建多个共享
         startActivity(intent, ActivityOptions.makeSceneTransitionAnimation(this, Pair.create(view, "share"),Pair.create(fab,"fab"))
                 .toBundle());
     }
 
-share的方式，不需要对方页面接收设置过渡动画，而是需要在xml中配置transitionName属性：
+share的方式，不需要对方页面接收设置过渡动画，而是需要在xml中配置transitionName属性： 
 
     <View
     android:background="?android:colorPrimary"
@@ -1021,12 +1019,221 @@ share的方式，不需要对方页面接收设置过渡动画，而是需要在
 
 ## Hanlder说明
 
-主线程只能更新UI ，主线程不能做耗时操作
-why:
-从requestLayout后到vSync信号到达的这段时间内，如果在主线程执行其他任务，会导致刷新不及时.
-问题：onCreate中可以拿到View的宽高吗
-不能 但是可以添加异步任务，view.post;
+主线程只能更新UI ，主线程不能做耗时操作         
+why:       
+从requestLayout后到vSync信号到达的这段时间内，如果在主线程执行其他任务，会导致刷新不及时.          
+问题：onCreate中可以拿到View的宽高吗          
+不能 但是可以添加异步任务，view.post;       
 
+## 使用&&原理
+构造Handler对象时候，需要传Looper对象         
+handler对象如果要和主线程绑定，在main方法已经创建looper对象并且开启loop.loop循环。所以可以不传      
+handler对象如果要和子线程绑定， 需要looper.prepare，并且开启循环loop.loop      
+
+looper构造函数
+
+    private Looper(boolean quitAllowed) {
+        mQueue = new MessageQueue(quitAllowed);
+        mThread = Thread.currentThread();//线程指定
+    }
+
+looper.prepare方法
+
+     private static void prepare(boolean quitAllowed) {
+        if (sThreadLocal.get() != null) {
+            throw new RuntimeException("Only one Looper may be created per thread");
+        }
+        sThreadLocal.set(new Looper(quitAllowed));
+    }
+
+重点在 sThreadLocal.set(new Looper(quitAllowed));        
+        
+ThreadLocal            
+
+是 Java 中一个用于线程内部存储数据的工具类。每个线程都有变量的副本，实现线程隔离，线程只能访问到自己线程的数据，适用于不同线程作用域的数据备份。
+每个线程内部维护一个 ThreadLocalMap，内部存储多个 Entry(是 ThreadLocalMap 的一个静态内部类，可以理解为键值对)，每个 Entry 里面维护着 ThreadLocal(相当于 key)和 ThreadLocal 对应的泛型(相当于 value)。          
+每个线程的内部维护有一个 Entry 数组；每个TreadLocal 作为 key 存储在 ThreadLocalMap 中，只有获取到 Thread 对象才能获取到其内部的数据，数据就被隔离在不同的线程内部，所以实现了线程隔离          
+![img.png](pic/img_threadLocal.png)
+
+ThreadLocal 内存泄漏的情况       
+           
+每个 ThreadLocal 可以作为 key 将不同的 value 存储在不同 Thread 的 Map 中，当获取数据的时候，同个 ThreadLocal 就可以在不同线程的 Map 中得到不同的数据，
+我们会发现 Entry 中，ThreadLocal 是一个弱引用，而 value 则是强引用。
+虚引用的时候在 set get 方法的 getEntry 时候还会检查一下 key 为 null,有机会回收，如果是强引用，没有机会回收了；
+由于 ThreadLocalMap 的生命周期跟 Thread 一样长，如果没有手动删除（remove()方法）对应 key 就会导致内存泄漏．
+如果外部没有对 ThreadLocal 的任何引用，那么 ThreadLocal 就会被回收，此时其对应的 value 也就变得没有意义了（map
+中的 entry 中得到 value 永远访问不到），但
+是 entry 却被生命周期长的 ThreadLocalMap 持有导致无法被回收，这就造成了内存泄露。
+怎么解决？
+1.使用完 ThreadLocal ，调用其 remove 方法删除对应的 Entry          
+2.使用完 ThreadLocal ，当前 Thread 也随之运行结束         
+
+ThreadLocal 线程不安全的情况
+不能共享一个 static 实例对象，意味着线程访问的是同一个对象的引用；
+多线程共享 ThreadLocal 变量，但是不共享 ThreadLocal 里面的变量。
+也就是每个线程共享 Thread.threadLocals 的 key，而不不共享 Thread.threadLocals 的 value
+
+looper.loop方法中：      
+
+    public static void loop() {
+        final Looper me = myLooper();
+        ...
+         for (;;) {
+            if (!loopOnce(me, ident, thresholdOverride)) {
+                return;
+            }
+        }
+    }
+    
+    public static @Nullable Looper myLooper() {
+        return sThreadLocal.get();
+    }
+
+    private static boolean loopOnce(final Looper me,final long ident, final int thresholdOverride) {
+        Message msg = me.mQueue.next(); // might block
+    }
+
+Looper.quit/quitSafely 的区别?     
+Looper.quit 方法，实际上执行了 MessageQueue 中的 removeAllMessagesLocked 方法,该方法的作用是把MessageQueue 消息池中所有的消息全部清空，无论是延迟消息还是⾮延迟消息。            
+Looper.quitSafely 方法时，实际上执行了 MessageQueue 中的 removeAllFutureMessagesLocked 方法，通过名字就可以看出，该方法只会清空 MessageQueue 消息池中所有的延迟消息，并将消息池中所有的⾮延迟消息派发出去让Handler去处理.            
+quitSafely 相比于 quit 方法安全之处在于清空消息之前会派发所有的⾮延迟消息。             
+
+MessageQueue.enqueue              
+插入消息的时候然后根据 Message 的执行时间，找到在链表中的插入位置进行插入 同时判断是否需要唤醒 MessageQueue。有两种情况需要唤醒：        
+1.当新插入的 Message 在链表头时          
+2.如果 messageQueue 是空的或者正在等待下个任务的延迟时间执行           
+
+MessageQueue.next方法           
+
+如果 Looper 已经退出了，直接返回 null进入死循环，直到获取到 Message 或者退出           
+循环中先判断是否需要进行阻塞，阻塞结束后，对 MessageQueue 进行加锁，获取 Message 如果 MessageQueue 中没有消息，则直接把线程无限阻塞等待唤醒；          
+如果 MessageQueue 中有消息，则判断是否需要等待，否则则直接返回对应的 message。 可以看到逻辑就是判断当前时间 Message 中是否需要等待。        
+其中 nextPollTimeoutMillis 表示阻塞的时间，-1 表示无限时间，只有通过唤醒才能打破阻塞。         
+
+    Message next() {
+        //如果 Looper 已经退出了，直接返回 null
+        final long ptr = mPtr;
+        if (ptr == 0) {
+            return null;
+        }
+
+        int pendingIdleHandlerCount = -1; // -1 only during first iteration
+        //阻塞时间
+        int nextPollTimeoutMillis = 0;
+        for (;;) {
+            if (nextPollTimeoutMillis != 0) {
+                Binder.flushPendingCommands();
+            }
+            //阻塞对应时间
+            nativePollOnce(ptr, nextPollTimeoutMillis);
+
+            //对messageQueue进行加锁，保证线程安全
+            synchronized (this) {
+                //尝试检索下一条消息。如果找到，则返回
+                final long now = SystemClock.uptimeMillis();
+                Message prevMsg = null;
+                Message msg = mMessages;
+                if (msg != null && msg.target == null) {
+                    //同步屏障。查找队列中的下一条异步消息。
+                    //同步屏障在 MessageQueue.next 函数中发挥着作用。
+                    do {
+                        prevMsg = msg;
+                        msg = msg.next;
+                    } while (msg != null && !msg.isAsynchronous());
+                }
+                if (msg != null) {
+                    if (now < msg.when) {
+                        //下一个消息还没准备好，计算等待的时间差
+                        nextPollTimeoutMillis = (int) Math.min(msg.when - now, Integer.MAX_VALUE);
+                    } else {
+                        // 获取到消息现在需要执行，标记MesageQueue非阻塞
+                        mBlocked = false;
+                        if (prevMsg != null) {
+                            //链表操作取下一个  
+                            prevMsg.next = msg.next;
+                        } else {
+                            mMessages = msg.next;
+                        }
+                        msg.next = null;
+                        msg.markInUse();
+                        return msg;
+                    }
+                } else {
+                    // 没有消息，-1 表示无限时间，只有通过唤醒才能打破阻塞。
+                    nextPollTimeoutMillis = -1;
+                }
+    }
+
+Message 创建方式：       
+1.Message msg = new Message(); 每次需要 Message 对象的时候都创建一个新的对象，每次都要去堆内存开辟对象存储空间          
+2.Message msg = Message.obtain(); obtainMessage 能避免重复 Message 创建对象。      
+
+Message.obtain()消息池使用 Message 链表结构实现，消息池默认最大值 50。        
+它先判断消息池是不是为空:                
+如果消息池为空的话说明还没有 Message 被放进去，那么就 new 出来一个 Message 对象。            
+如果⾮空的话就从消息池表头的 Message 取走,再把表头指向 next。
+消息在 loop 中被 handler 分发消费之后会执行回收的操作，将该消息内部数据清空并添加到消息链表的表头。             
+
+3.Message msg = handler.obtainMessage(); 其内部也是调用的 obtain()方法         
+
+Handle 的 postDelayed()方法是怎么实现的，内存屏障了解吗，源码看过吗         
+postDelayed（）把一个 Ruanble 打包成 Message（getPostMessage（r））调用 sendMessageDelayed，最终调用 sendMessageAtTime，发给 Message 去处理;         
+sendMessageAtTime这个方法按时间顺序把 Message 插入 MessageQueue,形成一个按时间排序的单链表,然后唤醒线程。                
+
+怎么将Message设置为异步：
+1.Message.setAsynchronous(true)方法将 Message 设置为异步消息           
+2.Handler 构造方法中传入 async 参数，设置为 true，使用此 Handler 添加的 Message 都是异步的；           
+
+阻塞
+系统怎么实现的阻塞与唤醒
+nativePollOnce阻塞
+nativeWake阻塞
+这种机制是通过pipe(管道)机制实现的:简单来说，管道就是一个文件在管道的两端，分别是两个打开文件的，文件描述符，
+这两个打开文件描述符，都是对应同一个文件，其中一个是用来读的，别一个是用来写的;
+一般的使用方式就是
+一个线程通过读文件描述符，来读管道的内容，当管道没有内容时，这个线程就会进入等待状态
+而另外一个线程，通过写文件描述符，来向管道中写入内容，写入内容的时候，如果另一端正有线程正在等待管道中的内容，那么这个等待的线程就会被唤醒;
+这个等待和唤醒的操作是如何进行的呢，这就要借助 Linux系统中的 epoll机制了。
+Linux 系统中的 epoll机制为处理大批量句柄而作了改进的 poll, 是Linux下多路复用 IO接口
+select/poll的增强版本,它能显著减少程序，在大量并发连接中，只有少量活跃的情况下的系统 CPU 利用率;
+即当管道中有内容可读时，就唤醒当前正在等待管道中的内容的线程;
+
+## HandlerThread
+
+HandlerThread 本质上是一个在子线程的handler,(HandlerThread = Handler + Thread)
+使用:
+步骤1: 创建HandlerThread实例对象
+
+    HandlerThread mHandlerThread = newHandlerThread("handlerThread");
+
+步骤2: 启动线程
+
+    mHandlerThread.start();
+
+步骤3: 创建工作线程Handler&复写handleMessage
+
+    Handler workHandler = newHandler( handlerThread.getLooper() ) [
+        @OverRide
+        publicboolean handleMessage(Message message){
+            ..//消息处理
+            return true;
+        }
+    }
+
+步骤4: 使用工作线程Handler向工作线程的消息队列发送消息
+
+    Message msg = Message.obtain();
+    msg.what = 2; //消息的标识
+    msg.obj="B";// 消息的存放
+
+    //通过Handler发送消息到其绑定的消息队列
+    workHandler.sendMessage(msg)
+
+步骤5: 结束线程，即停止线程的消息循环
+
+    mHandlerThread.quit();
+
+##  
 
 # SP&&MMKV
 
@@ -1184,20 +1391,18 @@ Subscribe是EventBus自定义的注解，共有三个参数（可选）：thread
         Log.e(TAG, "onReceiveMsg: " + message.toString());
     }
 
-原理:
-1、register方法将对象实例用软引用包裹，保存到一个map缓存集合中
-2、post方法 传入一个对象进去，然后遍历map里面多有的对象，找到所有的带有
-@subscribe注解的并且方法参数与post的对象是同一类型的Method。 并通过反射执行Method.
-3、Subscribe线程调度 执行method方法的时候会去获取注解上标记得线程，然后切换到指定线程。
-4、unregister取消订阅 从第一步中的缓存map中移除对应注册的对象实例
+原理:          
+1. register方法将对象实例用软引用包裹，保存到一个map缓存集合中      
+2. post方法 传入一个对象进去，然后遍历map里面多有的对象，找到所有的带有@subscribe注解的并且方法参数与post的对象是同一类型的Method。 并通过反射执行Method.       
+3. Subscribe线程调度 执行method方法的时候会去获取注解上标记得线程，然后切换到指定线程。         
+4. unregister取消订阅 从第一步中的缓存map中移除对应注册的对象实例          
 
-ThreadMode 模式:
-ThreadMode.POSTING，默认的线程模式，在那个线程发送事件就在对应线程处理事件，避免了线程切换，效率高。
-ThreadMode.MAIN，如在主线程（UI线程）发送事件，则直接在主线程处理事件；如果在子线程发送事件，则先将事件入队列，然后通过
-Handler 切换到主线程，依次处理事件。
-ThreadMode.MAIN_ORDERED，无论在那个线程发送事件，都先将事件入队列，然后通过 Handler 切换到主线程，依次处理事件。
-ThreadMode.BACKGROUND，如果在主线程发送事件，则先将事件入队列，然后通过线程池依次处理事件；如果在子线程发送事件，则直接在发送事件的线程处理事件。
-ThreadMode.ASYNC，无论在那个线程发送事件，都将事件入队列，然后通过线程池处理。
+ThreadMode 模式:            
+ThreadMode.POSTING，默认的线程模式，在那个线程发送事件就在对应线程处理事件，避免了线程切换，效率高。          
+ThreadMode.MAIN，如在主线程（UI线程）发送事件，则直接在主线程处理事件；如果在子线程发送事件，则先将事件入队列，然后通过Handler切换到主线程，依次处理事件。        
+ThreadMode.MAIN_ORDERED，无论在那个线程发送事件，都先将事件入队列，然后通过 Handler 切换到主线程，依次处理事件。         
+ThreadMode.BACKGROUND，如果在主线程发送事件，则先将事件入队列，然后通过线程池依次处理事件；如果在子线程发送事件，则直接在发送事件的线程处理事件。           
+ThreadMode.ASYNC，无论在那个线程发送事件，都将事件入队列，然后通过线程池处理。           
 
 # Retrofit
 
@@ -1245,17 +1450,17 @@ ThreadMode.ASYNC，无论在那个线程发送事件，都将事件入队列，�
         @Multipart
         Call<ResponseBody> testFileUpload1(@Part("name") RequestBody name, @Part("age") RequestBody age, @Part MultipartBody.Part file);
 
-  @PartMap参数可以存RequestBody
+    @PartMap参数可以存RequestBody
 
         @POST("/form")
         @Multipart
         Call<ResponseBody> testFileUpload2(@PartMap Map<String, RequestBody> args, @Part MultipartBody.Part file);
 
-3. @Streaming
-处理返回Response的方法的响应体，即没有将body（）转换为byte []
+3. @Streaming           
+处理返回Response的方法的响应体，即没有将body（）转换为byte []              
 
 ### 参数类
-1. @Header 在参数里面可以用，写在外面@Headers
+1. @Header 在参数里面可以用，写在外面@Headers             
 
         // @Header   不固定请求头，作用于参数
         @GET("user")
@@ -1266,49 +1471,51 @@ ThreadMode.ASYNC，无论在那个线程发送事件，都将事件入队列，�
         @GET("user")
         Call<User> getUser()
 
-2. @URL 直接传入一个请求的 URL变量 用于URL设置
-3. @Path URL地址的缺省值
-4. get使用的@Query，@QueryMap
-5. 单一post使用的body
-6. @POST("/form")+@FormUrlEncodedart 参数Filed，FiledMap
-   @POST("/form")+@MultipPart 参数part PartMap
+2. @URL : 直接传入一个请求的URL变量，用于URL设置                           
+3. @Path : URL地址的缺省值              
+4. get使用的@Query，@QueryMap                    
+5. 单一post使用的body                    
+6. @POST("/form")+@FormUrlEncodedart 参数Filed，FiledMap          
+   @POST("/form")+@MultipPart 参数part PartMap              
 
 # 原理
 Retrofit 就是一个注解形式的网络请求封装库，请求不是retrofit完成的，只是封装了请求参数，head，URL，返回结果处理，支持 RXJava进行线程切换，简化了操作，请求是 okhttp3 完成的，
 
 创建创建 Retrofit 实例 ，将网络请求接口传给 Retrofit.Create()，动态代理（生成一个代理类继承这个接口，执行代理类.newProxyInstance 产生代理对象并传三个参数（类加载器，类，
-invocationHanlder），完成这个接口的网络请求方法，调用网络请求方法的时候会调用 invocationHanlder 的 invoke 方法，所有的请求都走 invoke 函数
+invocationHandler），完成这个接口的网络请求方法，调用网络请求方法的时候会调用 invocationHanlder 的 invoke 方法，所有的请求都走 invoke 函数;         
+
 此时在 invoke方法中统一处理网络请求接口实体对象的方法，invoke方法会通过方法构造一个ServiceMethod对象，并将其放入缓存中， 然后根据ServiceMethod对象和网络请求的参数去构造一个OkHttpCall对象，
 
-这个OkHttpCall对象内部通过OkHttp提供的Api来处理网络请求，为了将OkHttpCall对象适配成方法的返回类型，Retrofit提供了配置CallAdpaterFactory的Api，
-比如RxJava2CallAdapterFactory就会将OkHttpCall对象适配成一个Observable对象，并在Obserable的subscribleActual方法中调用OkHttpCall对象发起网络请求并回调Observser的onNext方法来处理网络请求返回的数据。
-Retrofit还提供了配置数据格式转换的API，可以针对不同的数据类型进行处理。
+这个OkHttpCall对象内部通过OkHttp提供的Api来处理网络请求，为了将OkHttpCall对象适配成方法的返回类型，Retrofit提供了配置CallAdapterFactory的Api，比如RxJava2CallAdapterFactory,就会将OkHttpCall对象适配成一个Observable对象，并在Observable的subscribleActual方法中调用OkHttpCall对象发起网络请求并回调Observser的onNext方法来处理网络请求返回的数据。
+Retrofit还提供了配置数据格式转换的API，可以针对不同的数据类型进行处理。GsonConverterFactory.    
 
-Retrofit是一款能够将Java接口转换成一个能够进行网络请求对象的框架，具有使用简单，可扩展性强等优点，其内部通过动态代理模式生成接口的实体对象，并且在InvocationHandler中统一处理请求方法，通过解读方法的注解来获得接口中配置的网络请求信息，并将网络请求信息和请求参数一起封装成一个OkHttpCall对象，
-这个OkHttpCall对象内部通过OkHttp提供的Api来处理网络请求，为了将OkHttpCall对象适配成方法的返回类型，Retrofit提供了配置CallAdpaterFactory的Api，比如RxJava2CallAdapterFactory就会将OkHttpCall对象适配成一个Observable对象，并在Obserable的subscribleActual方法中调用OkHttpCall对象发起网络请求并回调Observser的onNext方法来处理网络请求返回的数据。
-Retrofit还提供了配置数据格式转换的API，可以针对不同的数据类型进行处理。
+Retrofit是一款能够将Java接口转换成一个能够进行网络请求对象的框架，具有使用简单，可扩展性强等优点，其内部通过动态代理模式生成接口的实体对象，并且在InvocationHandler中统一处理请求方法，通过解读方法的注解来获得接口中配置的网络请求信息，并将网络请求信息和请求参数一起封装成一个OkHttpCall对象，          
+这个OkHttpCall对象内部通过OkHttp提供的Api来处理网络请求，为了将OkHttpCall对象适配成方法的返回类型，Retrofit提供了配置CallAdpaterFactory的Api，比如RxJava2CallAdapterFactory就会将OkHttpCall对象适配成一个Observable对象，并在Obserable的subscribleActual方法中调用OkHttpCall对象发起网络请求并回调Observser的onNext方法来处理网络请求返回的数据。              
 
 反观一下Retrofit，其内部的设计结构非常清晰，通过动态代理来处理接口，通过OkHttp来处理网络请求，通过CallAdapterFactory来适配OkHttpCall，通过ConverterFactory来处理数据格式的转换，这符合面对对象设计思想的单一职责原则，
-同时，Retrofit对CallAdpaterFactory和ConverterFactory的依赖都是依赖其接口的，这就让我们可以非常方便的扩展自己的CallAdpaterFactory和ConverterFactory，这符合依赖倒置原则；
+同时，Retrofit对CallAdpaterFactory和ConverterFactory的依赖都是依赖其接口的，这就让我们可以非常方便的扩展自己的CallAdapterFactory和ConverterFactory，这符合依赖倒置原则；
 不管Retrofit内部的实现如何复杂，比如动态代理的实现、针对注解的处理以及寻找合适的适配器等，Retrofit对开发者隐藏了这些实现细节，只提供了简单的Api给开发者调用，开发者只需要关注通过的Api即可实现网络请求，这种对外隐藏具体的实现细节的思想符合迪米特原则。
-另外，Retrofit内部大量使用了设计模式，比如构造Retrofit对象时使用了Builder模式，处理接口时是用来动态代理模式，适配OkHttpCall时使用了Adapter模式，生成CallAdpater和Converter时使用了工厂模式。
+另外，Retrofit内部大量使用了设计模式，比如构造Retrofit对象时使用了Builder模式，处理接口时是用来动态代理模式，适配OkHttpCall时使用了Adapter模式，生成CallAdapter和Converter时使用了工厂模式。
 Retrofit的设计正是因为遵循了面向对象的思想，以及对设计模式的正确应用，才使得其具备结构清晰、易Retrofit是一款能够将Java接口转换成一个能够进行网络请求对象的框架，具有使用简单，可扩展性强等优点，
 
+
+# Rxjava
+    
 # MVVM
 
-viewModel出现为了解决什么问题?
-看下viewModel的优点就知道了:
-1.对于activity/fragment的销毁重建，它们内部的数据也会销毁，通常可以用onSavelnstanceState()防法保存，通过onCreate的bundle中重新获取，但是大量的数据不合适，而vm会再页面销毁时自动保存并在页面加载时恢复。
-2.对于异步获取数据，大多时候会在页面destroved时回收资源，随着数据和资源的复杂，会造成页面中的回收操作越来越多，页面处理ui的同时还要处理资源和数据的管理。而引入vm后可以把资源和数据的处理统一放在vm 里页面回收时系统也会回收vm。
-加上databinding的支持后，会大幅度分担ui层的负担。
-内部原理:
-vm内部很简单，只有一个onClean方法
-vm的创建一般是这样
+viewModel出现为了解决什么问题?          
+看下viewModel的优点就知道了:         
+1.对于activity/fragment的销毁重建，它们内部的数据也会销毁，通常可以用onSaveInstanceState()方法保存，通过onCreate的bundle中重新获取，但是大量的数据不合适，而vm会再页面销毁时自动保存并在页面加载时恢复。      
+2.对于异步获取数据，大多时候会在页面destroy时回收资源，随着数据和资源的复杂，会造成页面中的回收操作越来越多，页面处理ui的同时还要处理资源和数据的管理。而引入vm后可以把资源和数据的处理统一放在vm里页面回收时系统也会回收vm。           
+加上dataBinding的支持后，会大幅度分担ui层的负担。    
+内部原理:    
+vm内部很简单，只有一个onClean方法        
+vm的创建一般是这样      
 
     ViewModelProviders.of(getActivity()).get(UserModel.cla ss);
 
-在of方法中通过传入的activity获取构造一个HolderFragment，HolderFragment内有个ViewModelStore，而ViewModelStore内部的一个hashMap保存着系统构造的vm对象，
-HolderFragment可以感知到传入页面的生命周期 (跟glide的做法差不多)HolderFragment构造方法中设置了 setRetainInstance(true)，所以页面销毁后vm可以正常保存
-2.get(UserModel.class);
-获取ViewModelStore.hashMap中的vm，第一次为空会走创建逻辑，如果我们没有提供vm创建的Factory，使用我们传入的activity获取application创建AndroidViewModelFactory，内部使用反射创建我们需要的vm对象。
+在of方法中通过传入的activity获取构造一个HolderFragment，HolderFragment内有个ViewModelStore，而ViewModelStore内部的一个hashMap保存着系统构造的vm对象，         
+HolderFragment可以感知到传入页面的生命周期 (跟glide的做法差不多)HolderFragment构造方法中设置了 setRetainInstance(true)，所以页面销毁后vm可以正常保存,       
+2.get(UserModel.class);        
+获取ViewModelStore.hashMap中的vm，第一次为空会走创建逻辑，如果我们没有提供vm创建的Factory，使用我们传入的activity获取application创建AndroidViewModelFactory，内部使用反射创建我们需要的vm对象。            
 
