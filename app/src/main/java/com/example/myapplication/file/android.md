@@ -1017,7 +1017,7 @@ share的方式，不需要对方页面接收设置过渡动画，而是需要在
 
 # Hanlder
 
-## Hanlder说明
+## Handler说明
 
 主线程只能更新UI ，主线程不能做耗时操作         
 why:       
@@ -1029,6 +1029,28 @@ why:
 构造Handler对象时候，需要传Looper对象         
 handler对象如果要和主线程绑定，在main方法已经创建looper对象并且开启loop.loop循环。所以可以不传      
 handler对象如果要和子线程绑定， 需要looper.prepare，并且开启循环loop.loop      
+
+Handler构造函数
+    
+        public Handler(@Nullable Callback callback, boolean async) {
+            ....
+            mLooper = Looper.myLooper();
+            if (mLooper == null) {
+                throw new RuntimeException(
+                    "Can't create handler inside thread " + Thread.currentThread()
+                            + " that has not called Looper.prepare()");
+            }
+            mQueue = mLooper.mQueue;
+            mCallback = callback;
+            mAsynchronous = async;
+    }
+
+
+looper.myLooper
+
+      public static @Nullable Looper myLooper() {
+        return sThreadLocal.get();
+    }
 
 looper构造函数
 
@@ -1233,7 +1255,48 @@ HandlerThread 本质上是一个在子线程的handler,(HandlerThread = Handler 
 
     mHandlerThread.quit();
 
-##  
+##  IdHandler
+
+Android中的IdleHandler是一个回调接口，它用于在主线程空闲时执行一些任务或操作。在Android中，主线程是用于处理UI更新和事件响应的线程，因此在主线程空闲时执行一些较为耗时的操作可能导致界面卡顿或无响应的情况。
+IdleHandler的作用就是在主线程空闲时执行一些轻量级的任务，以充分利用主线程的空闲时间，同时保持界面的流畅性。
+
+那么何时出现空闲？
+MessageQueue 是一个基于消息触发时间的优先级链表，所以出现空闲存在两种场景。
+1.MessageQueue 为空，没有消息；
+2.MessageQueue 中最近需要处理的消息，是一个延迟消息（when>currentTime），需要滞后执行；
+
+下面是一个简单的IdleHandler的使用示例：
+
+    public class MyIdleHandler implements MessageQueue.IdleHandler {
+        private Handler mHandler = new Handler(Looper.getMainLooper());
+    
+        @Override
+        public boolean queueIdle() {
+            // 在主线程空闲时执行一些任务
+            // TODO: 执行你的任务逻辑
+    
+
+            //返回值为 false，即只会执行一次；
+            //返回值为 true，即每次当消息队列内没有需要立即执行的消息时，都会触发该方法。
+            return true;
+        }
+    
+        //在使用时，只需要调用MyIdleHandler的start()方法即可。
+        public void start() {
+            //start()方法用于将IdleHandler添加到主线程的消息队列中，以开始监听主线程空闲。
+            Looper.getMainLooper().getQueue().addIdleHandler(this);
+        }
+    }
+
+
+
+IdleHandler会在主线程空闲时自动触发，并执行任务逻辑。当任务完成后，若希望继续监听主线程空闲并执行任务，queueIdle()方法需要返回true；若不再监听主线程空闲，返回false即可。
+
+需要注意的是，IdleHandler的执行时机和频率是由系统决定的，可能不是即时的。因此，如果有一些需要立即执行的任务，建议使用其他方式，如Handler的post()方法。
+1. IdleHandler适用于一些相对轻量级的、非即时性要求高的任务，例如延迟加载数据、后台缓存清理等。
+2. IdleHandler的执行时间和频率由系统决定，无法保证任务能够立即执行，因此不适用于一些对响应时间有严格要求的任务。
+3. 在使用IdleHandler时，需要注意任务的执行时长，避免任务过长导致卡顿或主线程无响应的情况。
+4. IdleHandler适用于监听主线程空闲执行任务，但并不适合用于实现动画、实时绘制等需要频繁刷新的场景，这些场景通常需要使用其他机制，如Handler的postDelayed()方法
 
 # SP&&MMKV
 
@@ -1264,9 +1327,7 @@ HandlerThread 本质上是一个在子线程的handler,(HandlerThread = Handler 
     mSPrefs.edit().putBoolean(key, value).apply();
 
 apply:
-
--
-同步提交数据到内存，并异步写入磁盘。不会返回提交结果，也不会抛出异常。适合在不需要关心提交结果的情况下使用，效率更高。         
+-同步提交数据到内存，并异步写入磁盘。不会返回提交结果，也不会抛出异常。适合在不需要关心提交结果的情况下使用，效率更高。         
 commit:
 - 同步提交数据，即将数据提交到内存，并同步写入磁盘。,返回提交结果，成功返回true，失败返回false,保证数据写入的顺序，且所有数据都会写入磁盘,适合需要确保数据写入完成并获取提交结果的情况。
 
