@@ -53,6 +53,5 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new MyAdapter(mMyViewModel.mItemDataList.getValue());
         mAdapter.setItemClickListener(mItemClickListener);
         mRecyclerView.setAdapter(mAdapter);
-
     }
 }
