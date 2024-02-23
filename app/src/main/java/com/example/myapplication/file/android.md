@@ -246,7 +246,35 @@ server的AMS发起 startActivity请求
 system _server 进程收到请求后，向 Zygote 进程发送创建进程的请求Zygote 进程 fork 出新的子进程，即 App
 进程，
 
-App 进程创建即初始化 ActivityThread，然后通过 BinderIPC 向 system server 进程的 AMS 发起
+App 进程初始化过程如下：            
+1.应用进程默认的java异常处理机制（可以实现监听、拦截应用进程所有的Java crash的逻辑）；        
+2.JNI调用启动进程的binder线程池（注意应用进程的binder线程池资源是自己创建的并非从zygote父进程继承的）；            
+3.通过反射创建ActivityThread对象并调用其“main”入口方法。            
+
+ActivityThread#main函数初始化的主要逻辑是：
+
+1.创建并启动主线程的loop消息循环；
+
+自此：主线程就有了完整的 Looper、MessageQueue、Handler          
+ActivityThread 的 Handler 就可以开始处理 Message，包括 Application、Activity、ContentProvider、Service、Broadcast 等组件的生命周期函数，都会以 Message 的形式，在主线程按照顺序处理
+主线程就进入阻塞状态，等待 Message，一旦有 Message 发过来，主线程就会被唤醒，处理 Message，处理完成之后，如果没有其他的 Message 需要处理，那么主线程就会进入休眠阻塞状态继续等待。              
+可以说Android系统的运行是受消息机制驱动的，而整个消息机制是由上面所说的四个关键角色相互配合实现的。        
+
+2.通过binder调用AMS的attachApplication接口将自己attach注册到AMS中。
+AMS服务在执行应用的attachApplication注册请求过程中，会通过oneway类型的binder调用应用进程ActivityThread#IApplicationThread的bindApplication接口，
+而bindApplication接口函数实现中又会通过往应用主线程消息队列post BIND_APPLICATION消息触发执行handleBindApplication初始化函数
+
+在ActivityThread#**handleBindApplication初始化过程中在应用主线程中主要完成如下几件事件**：
+
+根据框架传入的ApplicationInfo信息创建应用APK对应的LoadedApk对象;
+创建应用Application的Context对象；
+创建类加载器ClassLoader对象并触发Art虚拟机执行OpenDexFilesFromOat动作加载应用APK的Dex文件；
+通过LoadedApk加载应用APK的Resource资源；
+调用LoadedApk的makeApplication函数，创建应用的Application对象;
+执行应用Application#onCreate生命周期函数（APP应用开发者能控制的第一行代码）;
+
+
+然后通过 BinderIPC 向 system server 进程的 AMS 发起
 attachApplication 请求，system server 进程的 AMS 在收到 attachApplication 请求后，做一系列操作后，通知
 ApplicationThread去bindApplication，然后发送 H.BIND APPLICATION 消息
 
@@ -1023,7 +1051,8 @@ share的方式，不需要对方页面接收设置过渡动画，而是需要在
 why:       
 从requestLayout后到vSync信号到达的这段时间内，如果在主线程执行其他任务，会导致刷新不及时.          
 问题：onCreate中可以拿到View的宽高吗          
-不能 但是可以添加异步任务，view.post;       
+不能 但是可以添加异步任务，view.post;   
+view中给 用户提供了post方法，这个方法的处理逻辑是：将Runable 的action 保存到一个队列，在viewRootImpl 里面执行度量后再添加进Handler的MessageQueue中，这样就保障了action里面执行的内存是在完成度量后的结果，避免了使用延迟消息带来的困扰             
 
 ## 使用&&原理
 构造Handler对象时候，需要传Looper对象         

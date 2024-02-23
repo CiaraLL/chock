@@ -135,9 +135,28 @@ Java栈与数据结构上的栈有着类似的含义，它是一块先进后出�
 1.5 本地方法栈
 native 方法调用的过程在本地方法栈中进行
 
+# 数据库常用语句
 
+1. SELECT：从数据库中检索数据。
+    - 例如：`SELECT * FROM customers;` 表示从名为"customers"的表中选择所有列的数据。
 
+2. INSERT INTO：将新数据插入到数据库表中。
+    - 例如：`INSERT INTO customers (name, email) VALUES ('John Doe', 'john@example.com');` 表示将一条新的客户记录插入到"customers"表中。
 
+3. UPDATE：更新表中的数据。
+    - 例如：`UPDATE customers SET name = 'Jane Doe' WHERE id = 1;` 表示将ID为1的客户的名称更新为"Jane Doe"。
+
+4. DELETE FROM：从表中删除数据。
+    - 例如：`DELETE FROM customers WHERE id = 1;` 表示从"customers"表中删除ID为1的客户记录。
+
+5. CREATE TABLE：创建一个新的数据库表。
+    - 例如：`CREATE TABLE students (id INT, name VARCHAR(50), age INT);` 表示创建一个名为"students"的新表，包含id、name和age列。
+
+6. ALTER TABLE：修改数据库表的结构，如添加新列、修改列的数据类型等。
+    - 例如：`ALTER TABLE students ADD gender VARCHAR(10);` 表示向"students"表中添加一个名为"gender"的新列。
+
+7. DROP TABLE：删除数据库表。
+    - 例如：`DROP TABLE customers;` 表示删除名为"customers"的表。
 
 
 
