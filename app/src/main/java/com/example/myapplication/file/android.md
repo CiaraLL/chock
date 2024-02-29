@@ -1297,7 +1297,7 @@ MessageQueue 是一个基于消息触发时间的优先级链表，所以出现�
 下面是一个简单的IdleHandler的使用示例：
 
     public class MyIdleHandler implements MessageQueue.IdleHandler {
-        private Handler mHandler = new Handler(Looper.getMainLooper());
+        private Handler mHandFler = new Handler(Looper.getMainLooper());
     
         @Override
         public boolean queueIdle() {
@@ -1483,7 +1483,8 @@ Subscribe是EventBus自定义的注解，共有三个参数（可选）：thread
 
 原理:          
 1. register方法将对象实例用软引用包裹，保存到一个map缓存集合中      
-2. post方法 传入一个对象进去，然后遍历map里面多有的对象，找到所有的带有@subscribe注解的并且方法参数与post的对象是同一类型的Method。 并通过反射执行Method.       
+2. post方法 传入一个对象进去，然后遍历map里面多有的对象，找到所有的带有@subscribe注解的并且方法参数与post的对象是同一类型的Method。
+并通过反射执行Method.       
 3. Subscribe线程调度 执行method方法的时候会去获取注解上标记得线程，然后切换到指定线程。         
 4. unregister取消订阅 从第一步中的缓存map中移除对应注册的对象实例          
 
