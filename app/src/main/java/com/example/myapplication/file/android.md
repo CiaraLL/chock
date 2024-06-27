@@ -10,8 +10,10 @@ onPause（）：暂停状态。可能被其他的 activity
 onstop（）：完全不可见的时候被调用。处于停止状态。内存不足这个 Activity
 可能会被杀死，进行资源回收。                
 ondestroy（）：activity 被销毁的时候调用，进行资源释放。                 
-onRestart（）：从不可见的时候变成可见。            
-成对出现：onCreate 和 onDestroy：根据 activity 创建和销毁               
+onRestart（）：从不可见的时候变成可见。         
+
+成对出现：   
+onCreate 和 onDestroy：根据 activity 创建和销毁               
 onStart 和 onstop：根据 activity 是否可见，            
 onResume 和 onpause：根据 activity 是否显示在前台
 
@@ -56,17 +58,16 @@ Android 8.0
 
     onConfigurationChanged
 
-总结: 设置了configChanges属性为orientation之后Android6.0
-同没有设置configChanges情况相同，完整的走完了两个生命周期，调用了onSavelnstanceState和onRestorelnstanceState方法;      
-Android 7.0则会先回调onConfigurationChanged方法，剩下的流程跟Android6.0
-保持一致;                      
+总结: 设置了configChanges属性为orientation之后      
+Android 6.0 同没有设置configChanges情况相同，完整的走完了两个生命周期，调用了onSavelnstanceState和onRestorelnstanceState方法;      
+Android 7.0 则会先回调onConfigurationChanged方法，剩下的流程跟Android 6.0 保持一致;                      
 Android 8.0 系统更是简单只是回调了onConfigurationChanged方法，并没有走Activity的生命周期方法。
 
 ## 2.Activity 的四个启动模式
 
-FLAG_ACTIVITY_SINGLE_TOP:对应 singleTop
-启动模式。                                                             
+FLAG_ACTIVITY_SINGLE_TOP:对应 singleTop 启动模式。                                                             
 FLAG_ACTIVITY_NEW_TASK:对应 singleTask 模式。
+FLAG_ACTIVITY_CLEAR_TOP：同一任务栈的处于此Activity之上的都会出栈，和singleTask一起出现，触发OnNewIntent();
 
 ### 标准模式
 
@@ -153,25 +154,20 @@ taskAffinity 属性能给 Activity 指定 task,但必须使用 FLAG_ACTIVITY_NEW
     android.util.AndroidRuntimeException: Calling startActivity from outside of an Activity
     context requires the FLAG_ACTIVITY_NEW_TASK flag. Is this really what you want?
 
-因为 ⾮Activity 类型的 Context 并没有所谓的任务栈，所以待启动的 Activity 就找不到栈了。
-为待启动的 Activity 指定 FLAG_ACTIVITY_NEW_TASK 标记位，这样启动的时候就为它创建一个新的任务栈，而此时
-Activity 是以 singleTask 模式启动的。
+因为⾮Activity类型的 Context 并没有所谓的任务栈，所以待启动的 Activity 就找不到栈了。
+为待启动的 Activity 指定 FLAG_ACTIVITY_NEW_TASK 标记位，这样启动的时候就为它创建一个新的任务栈，而此时Activity 是以 singleTask 模式启动的。     
 
-在 Application 和 Service 中去 layout inflate 也是合法的，但是会使用系统默认的主题样式，如果你自定义了某些样式可能不会被使用。所以这种方式也不推荐使用。
+在 Application 和 Service 中去 layout.inflate 也是合法的，但是会使用系统默认的主题样式，如果你自定义了某些样式可能不会被使用。所以这种方式也不推荐使用。
 
 对于 startActivity 操作                                    
 ①当为 Activity Context 则可直接使用                                                             
-②当为其他 Context, 则必须带上 FLAG_ACTIVITY_NEW_TASK flags 才能使用，因为⾮ Activity context 启动
-Activity 没有 Activity 栈，则无法启动，因此需要加开启新的栈;
-
-另外 UI 相关要 Activity 中使用
+②当为其他 Context, 则必须带上 FLAG_ACTIVITY_NEW_TASK flags 才能使用，因为⾮ Activity context 启动Activity 没有 Activity 栈，则无法启动，因此需要加开启新的栈;              
 
 getApplication和getApplicationContext区别?
 
-1.对于Activity/Service来说,getApplication(和getApplicationContext0的返回值完全相同;
-除非厂商修改过接口;                                  
+1.对于Activity/Service来说,getApplication()和getApplicationContext()的返回值完全相同; 除非厂商修改过接口;                                    
 2.BroadcastReceiver在onReceive的过程，能使用getBaseContext.getApplicationContext获取所在Application,而无法使用getApplication;                            
-3.ContentProvider能使用getContext0.getApplicationContext获取所在应用程序。绝大多数情况下没有问题，但是有可能会出现空指针的问题，                    
+3.ContentProvider能使用getContext().getApplicationContext获取所在应用程序。绝大多数情况下没有问题，但是有可能会出现空指针的问题，                    
 情况如下:                        
 当同一个进程有多个apk的情况下，对于第二个apk是由provider方式拉起的，前面介绍过provider创建过程并不会初始化所在应用程序，此时执行返回的结果便是空。所以对于这种情况要做好判空。
 
@@ -179,20 +175,18 @@ getApplication和getApplicationContext区别?
 
 ### (1)onDestory()一定会执行吗？
 
-正常情况下的返回 onDestory 一定会执行的，
-后台强杀可能会发生：
+正常情况下的返回 onDestory 一定会执行的， 后台强杀可能会发生：        
 
-当前仅有一个 Activity,这时候强杀，会执行，                                
+当前仅有一个 Activity,这时候强杀，会执行，                                 
 当前很多 activity 实例，从 A 到 B 到 C，后台强杀只会 A 的 onDestroy，BC 都不会执行了。
 
 ### (2)onStop()一定会执行吗？
 
-如果要启动的是个透明的窗口,或者是对话框的样式,就不会执行。onstop 用于停止更新 UI。
+如果要启动的是个透明的窗口,或者是对话框的样式,就不会执行。onstop 用于停止更新UI。
 
 ### (3)怎么写一个Activity 的统一管理类：
 
-⑴定义一个 ActivityManager 实现
-Application.ActivityLifecycleCallbacks；                                        
+⑴定义一个 ActivityManager 实现 Application.ActivityLifecycleCallbacks；                                         
 ⑵List<WeakReference<Activity>> mActivityStack；
 
 七个方法
@@ -221,12 +215,11 @@ Application.ActivityLifecycleCallbacks；
 
 ## 6.Intent 可传递的数据类型有 3 种
 
-1.java 的 8 种基本数据类型（boolean byte char short int long float double）、String
-以及他们的数组形式；                            
+1.java 的 8 种基本数据类型（boolean byte char short int long float double）、String 以及他们的数组形式；                             
 2.Bundle 类，Bundle 是一个以键值对的形式存储可传输数据的容器；                                
 3.实现了 Serializable 和 Parcelable 接口的对象，这些对象实现了序列化。
 
-    Intent 传输数据的大小有限制吗？如何解决？
+Intent 传输数据的大小有限制吗？如何解决？ 
 
     答：Intent 中的 Bundle 是使用 Binder 机制进行数据传送的，数据会写到内核空间，
     Binder 的缓冲区是有大小限制的,有些 ROM 是 1M, 有些 ROM 是 2M;
@@ -301,29 +294,76 @@ Activity 已创建，即调用 onCreate
 
 ## BroadcastReceiver 与LocalBroadcastReceiver 有什么区别?
 
-BroadcastReceiver
-是跨应用广播，利用Binder机制实现支持动态和静态两种方式注册方式。                                         
-LocalBroadcastReceiver 是应用内广播，利用Handler
-实现，利用了IntentFilter的match功能，提供消息的发布与接收功能，实现应用内通信，效率和安全性比较 高仅支持动态注册
+BroadcastReceiver 是跨应用广播，利用Binder机制实现支持动态和静态两种方式注册方式。    
+
+静态注册：在AndroidManifest.xml中注册
+    
+    1.第一步：创建广播接收器 MyReceiver，继承 BroadcastReceiver 类，并实现 onReceiver()方法，
+    需要注意的是：不要在onReceive()方法中添加过多的逻辑操作或耗时的操作。因为在广播接收器中不允许开启线程，当onReceive()方法运行较长时间而没结束时，程序会报错。因此广播接收器一般用来打开其他组件，比如创建一条状态栏通知或启动一个服务。
+
+    
+    2.第二步：在AndroidManifest.xml 文件标签中注册广播接收器，具体如下
+
+        <receiver android:name=".MyReceiver"//用来指定注册哪一个广播接收器
+                android:exported="true" //表示是否允许这个广播接收器接收本程序以外的广播
+                android:enabled="true">//表示是否启用这个广播接收器
+          <intent-filter>
+              <action android:name="MY_Receiver"></action>
+          </intent-filter>
+        </receiver>
+
+
+动态注册：在代码中注册，调用registerReceiver()注册广播。需要注意的是动态注册的接收器一定要取消注册。在onDestroy()方法中调用unregisterReceiver()方法来取消注册。
+
+    1.设置监听器，继承BroadcastReceiver，实现onReceiver()方法
+    2.创建实例，设置IntentFilter，发送广播
+    3.解除注册
+
+发送广播： 
+1.发送普通广播：
+    
+    Intent intent = new Intent("action")//区分每条广播
+    sendBroadcast(intent);
+2.发送有序广播
+    
+    Intent intent = new Intent("action");
+    sendOrderedBroadcast(intent,null);
+注册广播接收器时：<inten-filter>中添加Android：priority = "数字"设置优先级/intentFilter.setPriority()就算多个广播接收器设置的action都是一样的，如果优先级不一样，按照优先级来接受该有序广播   
+调用abortBroadcast可以拦截    
+
+3.发送本地广播
+
+    Intent intent = new Intent("action")
+    LocalBroadcastManager.sendBroadcast(intent);
+LocalBroadcastReceiver 是应用内广播，利用Handler实现，利用了IntentFilter的match功能，提供消息的发布与接收功能，实现应用内通信，效率和安全性比较高仅支持动态注册
 
 # Services
+## service启动方式
+1.在activity中调用Context.startService()。service生命周期变化->onCreate -> onStartCommand(多次启动只调用),停止时，activity中调用stopService()
+2.在activity中调用Context.bindService()。service生命周期变化->onCreate->onBind(多次启动只调用),activity中调用unBindService停止服务，service调用OnDestroy;
+
+服务类型：
+1、普通服务：通过startService和bindService启动的服务
+
+2、前台服务执行一些用户能够注意到的操作。例如，音频应用会使用前台服务来播放音轨。前台服务必须显示 Notification。即使用户没有与应用互动，前台服务也会继续运行。
+使用前台服务时，您必须显示通知，让用户知道该服务正在运行。除非服务停止或从前台移除，否则无法关闭此通知。
+3、IntentService，是后台服务，执行用户不会直接注意到的操作。例如，如果应用使用某项服务来压缩其存储空间，则该服务通常是后台服务。
+
+当应用组件通过调用 bindService() 绑定到服务时，即服务绑定。绑定服务提供了一个客户端-服务器接口，该接口允许组件与服务交互、发送请求、接收结果，甚至可以通过进程间通信 (IPC) 跨进程执行这些操作。仅当与另一个应用组件绑定时，绑定服务才会运行。多个组件可以同时绑定到该服务，但全部取消绑定后，该服务即会被销毁。
 
 ## 1.IntentService
 
 IntentService是Service的子类，继承与Service类，用于处理需要异步请求。
 
-用户通过调用 Context.StartService(Intent)
-发送请求，服务根据需要启动，使用工作线程依次处理每个Intent，并在处理完所有工作后自身停止服务。            
-使用时，扩展IntentService并实现onHandleIntent(android.content.Intent)
-,IntentService接收Intent，启动工作线程，并在适当时机停止服务。                  
+用户通过调用 Context.StartService(Intent)发送请求，服务根据需要启动，使用工作线程依次处理每个Intent，并在处理完所有工作后自身停止服务。             
+使用时，扩展IntentService并实现onHandleIntent(android.content.Intent),IntentService接收Intent，启动工作线程，并在适当时机停止服务。                  
 所有的请求都在同一个工作线程上处理，一次处理一个请求，所以处理完所以的请求可能会花费很长的时间，但由于IntentService是另外了线程来工作，所以保证不会阻止App的主线程。
 
 ## 2.IntentService与Service的区别
 
 ### 何时使用
 
-Service用于没有UI工作的任务，但不能执行长任务(长时间的任务)
-，如果需要Service来执行长时间的任务，则必须手动开启个线程来执行该Service。                                                   
+Service用于没有UI工作的任务，但不能执行长任务(长时间的任务)，如果需要Service来执行长时间的任务，则必须手动开启个线程来执行该Service。                                                   
 IntentService可用于执行不与主线程沟通的长任务.
 
 ### 触发方法
@@ -633,8 +673,8 @@ handleResumeActivity()方法，在方法中先调用Activity.onResume()方法，
 
 measure流程开始执行之前，会先计算出DecorView的MeasureSpec。如果是match_parent就是屏幕的宽高
 
-    //生成DecorView根View的MeasureSpec
-    int childWidthMeasureSpec = getRootMeasureSpec(mWidth, lp.width);
+    int childWidthMeas    //生成DecorView根View的MeasureSpec
+ureSpec = getRootMeasureSpec(mWidth, lp.width);
     int childHeightMeasureSpec = getRootMeasureSpec(mHeight, lp.height);
 
 然后执行DecorView的measure()方法开始整个View树的测量。measure()
@@ -1318,7 +1358,6 @@ MessageQueue 是一个基于消息触发时间的优先级链表，所以出现�
     }
 
 
-
 IdleHandler会在主线程空闲时自动触发，并执行任务逻辑。当任务完成后，若希望继续监听主线程空闲并执行任务，queueIdle()方法需要返回true；若不再监听主线程空闲，返回false即可。
 
 需要注意的是，IdleHandler的执行时机和频率是由系统决定的，可能不是即时的。因此，如果有一些需要立即执行的任务，建议使用其他方式，如Handler的post()方法。
@@ -1473,6 +1512,12 @@ true，不会再调用它的 onInterceptTouchEvent 函数了，之后的所有�
 这样父控件的拦截又起作用了，相应的事件交给了父控件进行处理。
 
 # EventBus
+缺点：比如你现在有一团糟糕的代码，你想拆成多个模块(比如分别放到单独的module中)，eventbus的话，没有依赖啊，你都找不到数据是谁发的（发送源可能存在多个地方），你怎么拆依赖.
+
+3个地方都能产生一个数据，使用数据的地方收到数据的时候都不知道数据是从哪里来的。问题有如下几点
+1. 出问题的时候，不知道数据源是啥，因此就得在发送的数据里面加source字段特意去区分
+2. 模块如果在不同的module下，那每个模块都要依赖rxjava的包，且编译期会生成代码，增大包体积
+3. 最重要的还是模块之间关系的问题，大家到处都可以post数据，你没法约束了(尤其是开发经验不足的开发人员，写代码没有规范没有架构能力，可能会随便用post，就比如你在导航app中就喜欢用eventbus去post)
 
 Subscribe是EventBus自定义的注解，共有三个参数（可选）：threadMode、boolean sticky、int priority。 完整的写法如下：
 
@@ -1591,7 +1636,75 @@ Retrofit的设计正是因为遵循了面向对象的思想，以及对设计模
 
 
 # Rxjava
+## 实现原理
+https://blog.51cto.com/u_16213349/9289970
+
+    //通过 create() 方法创建一个 Observable 对象，并在 subscribe() 方法中定义事件的产生过程。
+    Observable.create(new ObservableOnSubscribe<Integer>() {
     
+        @Override
+        public void subscribe(ObservableEmitter<Integer> emitter) throws Exception {
+        // Observable 对象通过调用 onNext() 方法来发射事件
+            emitter.onNext(1);
+            emitter.onNext(2);
+            emitter.onNext(3);
+            emitter.onComplete();
+        }
+    })
+    .subscribeOn(Schedulers.io())   //指定事件产生在 IO 线程
+    .observeOn(AndroidSchedulers.mainThread()) //指定事件处理在主线程
+
+    .subscribe(new Observer<Integer>() {
+
+    // 通过调用 subscribe() 方法，将 Observable 对象与 Observer 对象进行订阅关联。
+    // observable.subscribe(observer);
+    // 通过创建一个 Observer 对象
+    // Observer 对象通过回调方法来处理事件。
+
+        @Override
+        public void onSubscribe(Disposable d) {
+        // 订阅时调用
+        }
+    
+        @Override
+        public void onNext(Integer value) {
+            // 接收到事件时调用
+        }
+    
+        @Override
+        public void onError(Throwable e) {
+            // 发生错误时调用
+        }
+    
+        @Override
+        public void onComplete() {
+            // 完成时调用
+        }
+    });
+
+常用操作符
+多个请求zip合并： https://blog.51cto.com/u_16175500/8541172
+
+# livedata
+https://juejin.cn/post/7341617163353374754
+首先我们需要创建一个LiveData对象，然后调用他的observe方法，传入一个生命周期的owner对象和一个我们自定义的观察者（他实现了onChanged接口）如下。
+每一个LiveData对象中都有一个mObservers集合。mObservers中可以存储该LiveData对象的所有观察者。即一个LiveData对象可以有多个观察者。
+更新数据的方法： postValue一般在子线程调用，setValue（）的区别，没有mVersion++。因为postValue 在切换线程以后又调用了一次 setValue，
+
+## LiveData如何感知生命周期：
+LiveData本身是不具备感知生命周期能力的。liveData之所以能够感知生命周期，完全归功于lifecycle。在官方对于lifecycle的介绍中提到了一个类LifecycleOwner，说你可以自己建一个类，实现了LifecycleOwner接口即可。
+在Activity的super，super，super...中你会发现ComponentActivity，并且他实现了LifecycleOwner。liveData.observe()，的第一个参数我们会传入this。
+LiveData是一种可观察的数据存储器类，它具有生命周期感知能力。这意味着LiveData能够感知与之关联的应用组件（如Activity、Fragment或Service）的生命周期状态。
+当关联的应用组件处于活跃状态时，LiveData会通知对应的观察者；而当关联的应用组件的状态变为DESTROYED时，会自动移除此观察者，避免内存泄漏。 LiveData仅在数据发生更改时发送更新，并且仅发送给活跃的观察者。           
+
+但如果观察者从非活跃状态更改为活跃状态，并且自上次变为活跃状态以来数据已经发生了更改，则观察者会收到最新的数据更新。这种特性可以视为一种“粘性”，因为它确保了即使观察者暂时不活跃，也能在重新变得活跃时接收到最新的数据。
+
+## Fragment使用LiveData需要 注意生什么
+
+## 与ViewModel结合使用：
+
+
+
 # MVVM
 
 viewModel出现为了解决什么问题?          
@@ -1609,4 +1722,136 @@ vm的创建一般是这样
 HolderFragment可以感知到传入页面的生命周期 (跟glide的做法差不多)HolderFragment构造方法中设置了 setRetainInstance(true)，所以页面销毁后vm可以正常保存,       
 2.get(UserModel.class);        
 获取ViewModelStore.hashMap中的vm，第一次为空会走创建逻辑，如果我们没有提供vm创建的Factory，使用我们传入的activity获取application创建AndroidViewModelFactory，内部使用反射创建我们需要的vm对象。            
+
+
+DynamicMachine()
+罗列出所有的状态，,,当代码中调用状态机中的initNewMission设置初始的state,根据状态执行DynamicAction的。
+Action
+无版本：
+
+所以操作的状态，一个状态有四种操作，从execute
+DynamicMachineState enum枚举，一个状态有四种action，开始，成功，失败，
+每个action结束切换下一个action，逻辑上需要切换状态的时候就执行
+1. IDLE，初始状态，生成航线返回成功，可以进入TAKE_OFF_CHECKED状态
+2. TAKE_OFF_CHECKED，通过开始巡检进入，STATED状态
+3. STATED，中间状态，无须执行任何操作，等待相关状态回调转换到HEADING_CHECK状态
+4. HEADING_CHECK，通过继续执行，可以进入HEADING_CHECKED状态
+5. HEADING_CHECKED，巡检完成，进入IDLE状态。
+   WaypointMissionManager.getInstance().pushKMZFileToAircraft
+   waypointMissionExecuteStateListener onMissionStateUpdate
+   waylineExecutingInfoListener onWaylineExecutingInfoUpdate onWaylineExecutingInterruptReasonUpdate
+
+四版本状态多：
+初始化
+loading 加载任务中
+loaded 任务加载完毕
+missonUpLoad 任务上传成功
+READ_TO_UPLOAD_ACTION 准备上传动作
+ACTION_UPLOADED 动作上传成功
+STARTED 中间
+PAUSED 暂停
+
+1.waypointV2MissionOperator.loadMission，加载任务，
+2.waypointV2MissionOperator.uploadMission 上传任务
+3.waypointV2MissionOperator.uploadWaypointActions 上传动作
+4.waypointV2MissionOperator.startMission 开始任务；
+5.waypointV2MissionOperator.stopMission
+
+
+waypointV2Mission,WaypointV2Mission.Builder，传参数 设置一些全局速度啊 任务id，addwaypoints，一组waypointV2的list,
+每一个点都有自己的参数；比如坐标高程是否需要使用全局速度之类的；还可以设置触发器和执行器；
+waypointTrigger = new WaypointTrigger.Builder()
+.setTriggerType(ActionTypes.ActionTriggerType.REACH_POINT)
+.setReachPointParam(new WaypointReachPointTriggerParam.Builder()
+.setStartIndex(index)
+.setAutoTerminateCount(1)
+.build())
+.build();
+
+waypointTrigger = new WaypointTrigger.Builder()
+.setTriggerType(ActionTypes.ActionTriggerType.ASSOCIATE)
+.setAssociateParam(new WaypointV2AssociateTriggerParam.Builder()
+.setAssociateType(ActionTypes.AssociatedTimingType.AFTER_FINISHED)
+.setAssociateActionID(associateAction.getActionID())
+.build())
+.build();
+
+状态机种设置初始化的 状态和此时状态的动作；
+每一个状态 有四个action,开始，成功，结束，取消
+按照逻辑 先执行一个状态的action,执行完毕触发下一个action,然后开始下一个state。
+
+在每个action中设置UI状态等。
+
+四版本：
+Bitmap bitmap = primaryFpvWidget.getBitmap();
+
+5版本：
+SurfaceView fpvSurfaceView = primaryFpvWidget.getFpvSurfaceView();
+PixelCopy.request(fpvSurfaceView, bitmap, i -> {
+BitmapUtil.isSaveBitmap(bitmap, name + "_" + finalNum + ".jpg");
+ }, new Handler(Looper.getMainLooper()));
+
+遇到的困难,四版本
+1.两个机载电脑，一个会影响payload的getwigets.
+刚开始发现这个问题的时候有时候这个list有值，有时候为null，很疑惑，因为paload的初始化时机和机载电脑初始化时机的并不确定，也没有考虑到这个问题；
+但是就是能肯定是机载电脑有问题了，然后就逐一排查，最后就考虑到初始化这个问题。就打印了初始化的时间，两个机载电脑轮流测。测出来了。
+
+2.要在飞机起飞的时候截取fpv的截图，四版本很简单primaryFpvWidget.getBitmap()，
+5版本没有getbitmap这个方法，最后就发现就需要primaryFpvWidget.getFpvSurfaceView()；
+PixelCopy工具中传入fpvSurfaceView获取截图；
+
+SurfaceView是继承自View的一个特殊视图，它可以在一个独立的线程中绘制图像。
+SurfaceView通过创建一个叫做Surface的窗口来实现图像的显示，这个Surface可以在一个新的线程中进行绘制操作，从而避免了主线程被占用而导致的UI卡顿。
+5.5官方的bug,航线的状态，idel,exection,interrupt,finnaihed 
+
+和相机通信：
+4.收机载电脑通信：
+收到信息解析，payload.setCommandDataCallback(，
+发送：通过 larserPayload.sendDataToPayload(getBytes(message), sendDataCallback)
+
+和相机通信：也是Payload.sharePayload.setMessageCallback
+
+悬停时间30，之前也是不了解，
+
+4.kmz文件在构造的时候，需要逐一对比；
+
+
+template.kml文件由三部分组成：
+
+创建信息：主要包含航线文件本身的信息，例如文件的创建、更新时间等。
+父元素为<Document>;/wpml:author/ wpml:createTime/ wpml:updateTime/
+任务信息：主要包含 wpml:missionConfig元素，定义航线任务的全局参数等。
+    
+模板信息：主要包含Folder元素，定义航线的模板信息（如航点飞行、建图航拍、倾斜摄影、航带飞行等）。不同航线模板类型包含的元素不同。
+
+kmz 结构：
+xmlns；
+xmlnswpml;
+Document: author，createTime，updateTime
+          MissionConfigDto：flyToWaylineMode（飞向首航点模式）
+            Folder
+
+个人规划：之前也是机缘巧合下做了安卓，又找到了上一份工作，想一直坚持做无人机，现在还是主要写安卓代码，后面在不耽误的情况下，想学c++,
+个人优点；
+学习能力强；刚开始去的时候，基本没人带，前期
+适应能力强：出差什么的都可以接受，对环境的适应啊;
+时间观念强；只要安排的任务基本都是提前完成。
+
+缺点：可能有时候比较较真，做事比较着急。急性子；
+
+第一份工作就是项目黄了，然后公司小，也想去个更好一点的发展。
+
+RTK:
+自定义网络RTK
+千寻
+
+
+四版本；
+native传递的的一组point，，遍历所有的点，每个点有一组gimbalYaw,一组gimbalPitch,一组hoverTimes，坐标，高度等参数；
+
+
+
+## kotlin 面试相关
+## 性能优化,图片优化
+## livedata+mvvm+viewModel
 
